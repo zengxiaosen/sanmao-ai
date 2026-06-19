@@ -1,0 +1,36 @@
+[project]
+name = "sanmao-quant-llm"
+version = "0.1.0"
+description = "Offline-first quant research scaffold for market data, text features, ML baselines, and backtests."
+requires-python = ">=3.10"
+dependencies = [
+  "duckdb>=1.0",
+  "joblib>=1.4",
+  "lightgbm>=4.4",
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "polars>=1.0",
+  "pyarrow>=15",
+  "requests>=2.31",
+  "scikit-learn>=1.5",
+  "xgboost>=2.1",
+  "pyyaml>=6.0",
+  "yfinance>=0.2.60",
+  "python-dotenv>=1.0",
+  "baostock>=0.8.9",
+]
+
+[project.optional-dependencies]
+llm = [
+  "accelerate>=0.33",
+  "bitsandbytes>=0.43",
+  "transformers>=4.44",
+  "huggingface_hub>=0.24",
+]
+futu = [
+  "futu-api>=9.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

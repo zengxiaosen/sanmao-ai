@@ -1,0 +1,105 @@
+# baseline.yaml 是第一版离线量化实验配置。
+# 当前目标不是实盘交易，而是验证：
+# 1. 行情数据 -> 特征 -> 模型预测 -> 回测 -> 报告 这条链路能跑通。
+# 2. 未来可以把新闻/舆情/公告的 LLM 特征拼进来。
+
+# symbols: 要研究的股票/ETF 列表。
+# 这里先选美股大盘科技股 + SPY ETF，是因为这些标的流动性好、历史数据多、适合做工程样例。
+# .US 是本项目内部约定，表示美国市场。Yahoo 查询时会自动去掉 .US。
+market: "US"
+strategy_id: "us_sample_news_xgboost_v1"
+
+symbols:
+  - AAPL.US
+  - MSFT.US
+  - NVDA.US
+  - SPY.US
+
+# start_date / end_date: 回测使用的数据时间范围。
+# 2018 起覆盖了牛市、疫情冲击、加息周期、AI 行情等多个市场阶段。
+start_date: "2018-01-01"
+end_date: "2026-05-29"
+
+# data_dir: 原始行情、特征表、DuckDB 数据库保存目录。
+# 放在 /root/autodl-tmp 是因为服务器系统盘只有 30GB，数据盘更适合放数据和模型。
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_sample_news_xgboost_v1"
+
+# report_dir: 预测结果和回测指标保存目录。
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sample_news_xgboost_v1"
+
+# 模型目录按 strategy_id 隔离。不要把不同市场/策略都写到同一个 models/ 目录。
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_sample_news_xgboost_v1"
+
+# allow_synthetic_fallback:
+# true 表示公共行情源访问失败时，允许生成“合成行情”继续跑工程链路。
+# 合成行情只用于 smoke test，不能证明策略有效。
+# 现在已经接 Tiingo，所以默认 false：真实数据失败就报错，避免误用合成数据。
+allow_synthetic_fallback: false
+
+# market_data_provider:
+# yfinance: 优先使用 yfinance 拉真实行情，适合研究和快速验证。
+# yahoo_chart: 直接访问 Yahoo chart API；当前 GPU 服务器实测可能 HTTP 403。
+# alpha_vantage: 使用 Alpha Vantage，需要环境变量 ALPHA_VANTAGE_API_KEY。
+# tiingo: 使用 Tiingo，需要环境变量 TIINGO_API_KEY。
+# synthetic: 强制使用合成行情，只用于工程测试。
+# 后续接入付费行情或券商历史行情时，会新增 provider。
+market_data_provider: "tiingo"
+
+# prediction_horizon_days:
+# 预测未来几天后的涨跌。1 表示预测“下一交易日”。
+# 例：今天收盘后生成特征，预测明天 close 相对今天 close 是否上涨。
+prediction_horizon_days: 1
+
+# train_window_days:
+# 每次训练使用多少个交易日的历史样本。756 约等于 3 年交易日。
+# 用 3 年是一个保守起点：太短容易样本不足，太长可能混入太旧的市场状态。
+train_window_days: 756
+
+# test_window_days:
+# 每次训练后，往未来预测多少个交易日。63 约等于 1 个季度。
+# 这叫样本外测试窗口（out-of-sample test window）：模型没见过这段未来数据，只能预测。
+test_window_days: 63
+
+# min_train_rows:
+# 最少训练样本数。多股票拼在一起后，500 是很低的安全下限。
+# 如果数据太少，训练出来的模型没有统计意义，所以直接跳过该窗口。
+min_train_rows: 500
+
+# probability_threshold:
+# long/flat 决策阈值。
+# 模型输出 prob_up，表示“下一交易日上涨的概率”。
+# 0.55 表示模型认为上涨概率 >= 55% 才买入/持有；否则空仓。
+# 先不用 0.50，是因为真实交易有成本和噪声，需要一点安全边际。
+probability_threshold: 0.55
+
+# transaction_cost_bps:
+# 仓位变化时的交易成本，单位是 bps（basis points，万分之一）。
+# 5 bps = 0.05%。买入或卖出时都可能有佣金、点差、冲击成本。
+transaction_cost_bps: 5
+
+model:
+  # kind: 当前优先使用 xgboost。XGBoost 对表格特征很强，是量化 baseline 常用模型。
+  kind: "xgboost"
+
+  # n_estimators: 树的数量。200 是小到中等规模的起点，速度和效果比较平衡。
+  n_estimators: 200
+
+  # max_depth: 每棵树最大深度。3 表示浅树，先降低过拟合风险。
+  max_depth: 3
+
+  # learning_rate: 学习率。0.05 比较保守，让每棵树只做小幅修正。
+  learning_rate: 0.05
+
+  # subsample: 每棵树训练时随机使用 80% 样本，降低过拟合。
+  subsample: 0.8
+
+  # colsample_bytree: 每棵树随机使用 80% 特征，降低对单一特征的依赖。
+  colsample_bytree: 0.8
+
+# text_features:
+# enabled=true 表示把新闻/舆情文本也纳入训练特征。
+# 第一版先用 sample_news.csv + 规则抽取器模拟 LLM JSON 输出。
+# 后续会把规则抽取器替换成本地 LLM 或 API LLM。
+text_features:
+  enabled: true
+  news_csv: "data_samples/news/sample_news.csv"

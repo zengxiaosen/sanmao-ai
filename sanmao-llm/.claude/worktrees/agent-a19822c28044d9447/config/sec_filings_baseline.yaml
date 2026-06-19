@@ -1,0 +1,40 @@
+# 使用 Tiingo 真实日线 + SEC EDGAR 免费公告/财报 filings 的 baseline。
+# 这个配置不依赖付费新闻 API，也不接券商真实交易账户。
+
+market: "US"
+strategy_id: "us_sec_rule_text_xgboost_v1"
+
+symbols:
+  - AAPL.US
+  - MSFT.US
+  - NVDA.US
+  - SPY.US
+
+start_date: "2021-01-01"
+end_date: "2026-05-29"
+
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_rule_text_xgboost_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sec_rule_text_xgboost_v1"
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_sec_rule_text_xgboost_v1"
+
+allow_synthetic_fallback: false
+market_data_provider: "tiingo"
+
+prediction_horizon_days: 1
+train_window_days: 756
+test_window_days: 63
+min_train_rows: 500
+probability_threshold: 0.55
+transaction_cost_bps: 5
+
+model:
+  kind: "xgboost"
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+text_features:
+  enabled: true
+  news_csv: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv"

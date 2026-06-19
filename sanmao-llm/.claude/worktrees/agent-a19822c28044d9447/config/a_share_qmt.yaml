@@ -1,0 +1,39 @@
+# A 股 + 国金 QMT/miniQMT 预留配置。
+# 当前只用于环境检测和后续适配，不会直接真实下单。
+
+symbols:
+  - 600000.SH
+  - 000001.SZ
+
+market: "CN_A"
+strategy_id: "cn_a_qmt_placeholder_v1"
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/cn_a_qmt_placeholder_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_qmt_placeholder_v1"
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/cn_a_qmt_placeholder_v1"
+
+paper_trading:
+  market: "CN_A"
+  starting_cash: 100000
+  max_symbol_weight: 0.10
+  transaction_cost_bps: 8
+  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_qmt_placeholder_v1/paper_trading"
+
+broker:
+  provider: "qmt"
+  submit_orders: false
+  allow_live_trading: false
+  min_notional: 1000
+  risk_limits:
+    block_if_open_orders: true
+    max_order_notional_pct: 0.10
+    max_total_notional_pct: 0.30
+
+qmt:
+  # 这些值不要写死真实账号。真实值写到服务器或本机 .env：
+  # QMT_ACCOUNT_ID=
+  # QMT_ACCOUNT_TYPE=STOCK
+  # QMT_CLIENT_PATH=
+  # QMT_SESSION_ID=1001
+  # QMT_TRADING_MODE=paper
+  account_type: "STOCK"
+  trading_mode: "paper"

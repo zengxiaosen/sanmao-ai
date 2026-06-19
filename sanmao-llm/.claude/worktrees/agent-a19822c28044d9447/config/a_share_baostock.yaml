@@ -1,0 +1,55 @@
+# A 股 BaoStock 日线研究配置。
+# BaoStock 只用于行情/财务等历史数据，不是券商交易接口，不能下单。
+
+market: "CN_A"
+strategy_id: "cn_a_baostock_price_xgboost_v1"
+
+symbols_file: "cn_a_symbols_sample.txt"
+
+start_date: "2021-01-01"
+end_date: "2026-05-29"
+
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/cn_a_baostock_price_xgboost_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_price_xgboost_v1"
+
+# A 股模型单独保存，不能和美股/港股共用 latest_model.joblib。
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/cn_a_baostock_price_xgboost_v1"
+
+allow_synthetic_fallback: false
+market_data_provider: "baostock"
+
+prediction_horizon_days: 1
+train_window_days: 756
+test_window_days: 63
+min_train_rows: 500
+probability_threshold: 0.55
+
+# A 股交易成本这里只是粗略 baseline：
+#   佣金、印花税、过户费、滑点都还没精细拆分。
+# 后续 A 股回测需要单独做更真实的费用模型。
+transaction_cost_bps: 12
+
+model_promotion:
+  enabled: true
+  min_annual_return: 0.0
+  min_sharpe: 0.0
+  min_max_drawdown: -0.25
+  max_mean_daily_turnover: 1.0
+
+model:
+  kind: "xgboost"
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+text_features:
+  enabled: false
+
+paper_trading:
+  market: "CN_A"
+  starting_cash: 100000
+  max_symbol_weight: 0.10
+  transaction_cost_bps: 12
+  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_price_xgboost_v1/paper_trading"

@@ -1,0 +1,117 @@
+# 使用 Tiingo 真实日线 + SEC EDGAR 免费 filings + Qwen 本地 LLM 抽取事件的 baseline。
+# 这个配置是“真正让 Qwen 文本特征进入训练/回测”的配置。
+
+market: "US"
+strategy_id: "us_sec_qwen_xgboost_v1"
+
+symbols:
+  - AAPL.US
+  - MSFT.US
+  - NVDA.US
+  - SPY.US
+
+# start_date / end_date:
+#   当前这次研究回测使用的数据范围。
+#   注意：这不是“模型只看这几年就永远固定”，而是本次实验的历史样本边界。
+#   现在主链路会用 2021-01-01 到 2026-05-29 的 Tiingo 日线和 SEC/Qwen 文本事件。
+start_date: "2021-01-01"
+end_date: "2026-05-29"
+
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_qwen_xgboost_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sec_qwen_xgboost_v1"
+
+# model_dir:
+#   必须按 market + strategy_id 隔离。
+#   这样美股 Qwen 策略的 latest_model.joblib 不会被 A 股或港股策略覆盖。
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_sec_qwen_xgboost_v1"
+
+allow_synthetic_fallback: false
+market_data_provider: "tiingo"
+
+# prediction_horizon_days:
+#   预测未来几天是否上涨。1 表示预测“下一个交易日 future_ret 是否 > 0”。
+prediction_horizon_days: 1
+
+# train_window_days:
+#   每个 walk-forward fold 用过去多少个交易日训练。
+#   756 大约等于 3 年交易日。例子：
+#     用 2021-2023 训练 -> 预测 2024 Q1；
+#     再把窗口向前滚动 -> 预测 2024 Q2。
+train_window_days: 756
+
+# test_window_days:
+#   每次训练完以后，向前预测多少个交易日作为样本外测试。
+#   63 大约等于 1 个季度。它不是模型见过的数据，是用来检查模型在“未来”表现如何。
+test_window_days: 63
+
+# min_train_rows:
+#   每次训练至少需要多少行样本。股票池越大，同一段时间产生的行数越多。
+#   太少会让模型非常不稳定，所以低于这个数就跳过该 fold。
+min_train_rows: 500
+
+# probability_threshold:
+#   long/flat 阈值。prob_up >= 0.55 才持有股票，否则空仓。
+#   当前不会自动调这个阈值，因为盲目调到历史最优很容易过拟合。
+probability_threshold: 0.55
+
+# transaction_cost_bps:
+#   仓位变化时扣除交易成本。5 bps = 0.05%。
+#   这里先近似模拟佣金、买卖价差和轻微滑点。
+transaction_cost_bps: 5
+
+# model_promotion:
+#   控制“本次训练出的 candidate_model 是否可以覆盖 latest_model”。
+#   这不是自动调参，只是晋级门槛。
+#   如果任一门槛失败，仍然会保存 model_dir/candidate_model.joblib，
+#   但不会覆盖 model_dir/latest_model.joblib。
+model_promotion:
+  enabled: true
+  min_annual_return: 0.0          # 年化收益至少不能为负。
+  min_sharpe: 0.0                 # Sharpe 至少不能为负。
+  min_max_drawdown: -0.25         # 最大回撤不能低于 -25%。例如 -0.40 会失败。
+  max_mean_daily_turnover: 1.0    # 平均每日换手不能过高，避免成本吞掉收益。
+
+model:
+  kind: "xgboost"
+  # 这些参数是保守 baseline，不是自动搜索出来的最优参数。
+  # 后续会单独做 hyperparameter search，但必须用独立验证集/嵌套 walk-forward，
+  # 不能为了让历史回测变漂亮就直接调到 metrics 最好。
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+text_features:
+  enabled: true
+
+  # 注意：这里读的是“已经由 Qwen 抽取好的结构化事件 CSV”，不是原始新闻 CSV。
+  # run_all.sh 会先检查/生成这个文件，再调用 run_baseline.py。
+  events_csv: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_qwen_xgboost_v1/news/sec_filings_qwen_events.csv"
+
+# paper_trading:
+#   第一版模拟盘配置。
+#   它不接券商，不下真实订单，只在本策略 report_dir/paper_trading/ 写模拟信号、订单和持仓。
+paper_trading:
+  market: "US"
+  starting_cash: 100000
+  max_symbol_weight: 0.25
+  transaction_cost_bps: 5
+  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sec_qwen_xgboost_v1/paper_trading"
+
+# broker:
+#   券商 paper account 接入配置。
+#   当前只建议使用 Alpaca paper trading。
+#   submit_orders 默认 false：只生成 broker_order_preview.csv，不提交到券商。
+#   等你创建 Alpaca paper account 并把 key 写入服务器 .env 后，再手动改 true。
+broker:
+  provider: "alpaca"
+  base_url: "https://paper-api.alpaca.markets"
+  submit_orders: false
+  allow_live_trading: false
+  min_notional: 10
+  time_in_force: "day"
+  risk_limits:
+    block_if_open_orders: true       # 有未成交订单时默认不再提交，避免重复挂单。
+    max_order_notional_pct: 0.30     # 单笔订单金额不超过账户权益 30%。
+    max_total_notional_pct: 0.50     # 本次提交总金额不超过账户权益 50%。

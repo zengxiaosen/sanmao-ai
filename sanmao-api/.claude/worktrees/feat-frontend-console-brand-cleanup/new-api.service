@@ -1,0 +1,28 @@
+# File path: /etc/systemd/system/new-api.service
+# sudo systemctl daemon-reload
+# sudo systemctl start new-api
+# sudo systemctl enable new-api
+# sudo systemctl status new-api
+[Unit]
+Description=One API Service
+After=network.target
+
+[Service]
+User=ubuntu  # 注意修改用户名
+WorkingDirectory=/path/to/new-api  # 注意修改路径
+ExecStart=/path/to/new-api/new-api --port 3000 --log-dir /path/to/new-api/logs  # 注意修改路径和端口号
+Restart=always
+RestartSec=5
+# 默认不要注入 HTTP(S)_PROXY / ALL_PROXY。
+# new-api 的默认 HTTP client 会继承这些环境变量；如果你把它们指向一个未运行的本地代理，
+# 所有上游请求都会在 proxyconnect 阶段失败，表现为:
+#   upstream error: do request failed
+#   proxyconnect tcp: dial tcp 127.0.0.1:<port>: connect: connection refused
+#
+# 只有在你明确管理了一个稳定可用的本地/旁路代理进程时，才添加类似配置：
+# Environment=HTTP_PROXY=http://127.0.0.1:17890
+# Environment=HTTPS_PROXY=http://127.0.0.1:17890
+# Environment=ALL_PROXY=socks5://127.0.0.1:17890
+
+[Install]
+WantedBy=multi-user.target

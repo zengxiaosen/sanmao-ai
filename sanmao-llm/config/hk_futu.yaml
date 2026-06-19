@@ -1,0 +1,41 @@
+# 港股 + 富途牛牛 / Moomoo OpenD 预留配置。
+# 当前只用于环境检测和后续适配，不会直接真实下单。
+
+symbols:
+  - 00700.HK
+  - 09988.HK
+  - 03690.HK
+
+market: "HK"
+strategy_id: "hk_futu_placeholder_v1"
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/hk_futu_placeholder_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/hk_futu_placeholder_v1"
+
+# 港股后续如果训练模型，也必须写到独立目录，避免覆盖美股/A 股模型。
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/hk_futu_placeholder_v1"
+
+paper_trading:
+  market: "HK"
+  starting_cash: 100000
+  max_symbol_weight: 0.10
+  transaction_cost_bps: 10
+  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/hk_futu_placeholder_v1/paper_trading"
+
+broker:
+  provider: "futu"
+  submit_orders: false
+  allow_live_trading: false
+  min_notional: 1000
+  risk_limits:
+    block_if_open_orders: true
+    max_order_notional_pct: 0.10
+    max_total_notional_pct: 0.30
+
+futu:
+  # 真实值写到运行机器 .env：
+  # FUTU_OPEND_HOST=127.0.0.1
+  # FUTU_OPEND_PORT=11111
+  # FUTU_TRADING_MODE=paper
+  # FUTU_MARKET=HK
+  trading_mode: "paper"
+  market: "HK"

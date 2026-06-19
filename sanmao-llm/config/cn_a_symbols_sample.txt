@@ -1,0 +1,13 @@
+# Example A-share universe file.
+# One symbol per line, using the project's internal format.
+
+600000.SH
+000001.SZ
+000333.SZ
+000651.SZ
+002415.SZ
+300750.SZ
+600036.SH
+600519.SH
+601318.SH
+601899.SH

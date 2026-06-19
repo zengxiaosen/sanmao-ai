@@ -1,0 +1,49 @@
+# A 股 BaoStock + ZZ500 股票池 + 逐日 membership 过滤研究配置。
+
+market: "CN_A"
+strategy_id: "cn_a_baostock_zz500_membership_price_xgboost_v1"
+
+symbols_file: "cn_a_zz500_symbols.txt"
+universe_membership_csv: "cn_a_zz500_membership_daily.csv"
+
+start_date: "2021-01-01"
+end_date: "2026-05-29"
+
+data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/cn_a_baostock_zz500_membership_price_xgboost_v1"
+report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_zz500_membership_price_xgboost_v1"
+model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/cn_a_baostock_zz500_membership_price_xgboost_v1"
+
+allow_synthetic_fallback: false
+market_data_provider: "baostock"
+
+prediction_horizon_days: 1
+train_window_days: 756
+test_window_days: 63
+min_train_rows: 3000
+probability_threshold: 0.55
+transaction_cost_bps: 12
+
+model_promotion:
+  enabled: true
+  min_annual_return: 0.0
+  min_sharpe: 0.0
+  min_max_drawdown: -0.25
+  max_mean_daily_turnover: 1.0
+
+model:
+  kind: "xgboost"
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+text_features:
+  enabled: false
+
+paper_trading:
+  market: "CN_A"
+  starting_cash: 100000
+  max_symbol_weight: 0.02
+  transaction_cost_bps: 12
+  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_zz500_membership_price_xgboost_v1/paper_trading"

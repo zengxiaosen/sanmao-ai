@@ -1,0 +1,61 @@
+name: Deploy To Aliyun Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to deploy
+        required: false
+        default: main
+
+jobs:
+  deploy:
+    name: Deploy on aliyun-120
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve branch
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.branch }}" ]; then
+            echo "name=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ALIYUN_SSH_KEY }}
+
+      - name: Add server to known_hosts
+        env:
+          ALIYUN_HOST: ${{ secrets.ALIYUN_HOST }}
+          ALIYUN_PORT: ${{ secrets.ALIYUN_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          PORT="${ALIYUN_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$ALIYUN_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy on server
+        env:
+          ALIYUN_HOST: ${{ secrets.ALIYUN_HOST }}
+          ALIYUN_PORT: ${{ secrets.ALIYUN_PORT }}
+          ALIYUN_USER: ${{ secrets.ALIYUN_USER }}
+          DEPLOY_BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          PORT="${ALIYUN_PORT:-22}"
+          ssh -p "$PORT" "${ALIYUN_USER}@${ALIYUN_HOST}" "
+            set -e
+            cd /opt/sanmao/sanmao-api
+            git fetch origin '${DEPLOY_BRANCH}'
+            git checkout '${DEPLOY_BRANCH}'
+            git reset --hard 'origin/${DEPLOY_BRANCH}'
+            bash /opt/sanmao/sanmao-api/scripts/deploy-on-server.sh '${DEPLOY_BRANCH}'
+          "
