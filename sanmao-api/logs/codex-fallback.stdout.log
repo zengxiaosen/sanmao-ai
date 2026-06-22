@@ -954,3 +954,38 @@
 [codex-fallback] 2026/06/19 22:59:08 HEAD /v1 (0s)
 [codex-fallback] 2026/06/19 22:59:08 HEAD /v1/ (92ms)
 [codex-fallback] 2026/06/19 22:59:08 GET /v1/models (20ms)
+[codex-fallback] 2026/06/22 08:43:45 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:43:45 POST /v1/responses (11.12s)
+[codex-fallback] 2026/06/22 08:43:56 POST /v1/responses (11.094s)
+[codex-fallback] 2026/06/22 08:44:04 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:44:04 POST /v1/responses (7.563s)
+[codex-fallback] 2026/06/22 08:44:12 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:44:12 POST /v1/responses (7.64s)
+[codex-fallback] 2026/06/22 08:44:25 POST /v1/responses (13.617s)
+[codex-fallback] 2026/06/22 08:44:36 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:44:36 POST /v1/responses (10.805s)
+[codex-fallback] 2026/06/22 08:44:47 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:44:47 POST /v1/responses (11.097s)
+[codex-fallback] 2026/06/22 08:44:57 POST /v1/responses (9.212s)
+[codex-fallback] 2026/06/22 08:45:01 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:45:01 POST /v1/responses (4.111s)
+[codex-fallback] 2026/06/22 08:45:13 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:45:13 POST /v1/responses (12.002s)
+[codex-fallback] 2026/06/22 08:45:42 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:45:42 POST /v1/responses (7.927s)
+[codex-fallback] 2026/06/22 08:47:25 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:47:25 POST /v1/responses (8.269s)
+[codex-fallback] 2026/06/22 08:47:34 POST /v1/responses (9.117s)
+[codex-fallback] 2026/06/22 08:47:46 POST /v1/responses (11.888s)
+[codex-fallback] 2026/06/22 08:48:08 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:48:08 POST /v1/responses (21.684s)
+[codex-fallback] 2026/06/22 08:48:22 POST /v1/responses (14.53s)
+[codex-fallback] 2026/06/22 08:48:52 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:48:52 POST /v1/responses (20.258s)
+[codex-fallback] 2026/06/22 08:49:09 stream copy ended via tunnel: context canceled
+[codex-fallback] 2026/06/22 08:49:09 POST /v1/responses (16.361s)
+[codex-fallback] 2026/06/22 08:50:46 POST /v1/responses (20.199s)
+[codex-fallback] 2026/06/22 08:51:44 POST /v1/responses (30.313s)
+[codex-fallback] 2026/06/22 08:51:59 POST /v1/responses (10.927s)
+[codex-fallback] 2026/06/22 08:53:26 POST /v1/responses (18.821s)
+[codex-fallback] 2026/06/22 08:53:57 POST /v1/responses (31.373s)
