@@ -152,10 +152,45 @@ function type2secretPrompt(type) {
     case 51:
       return '按照如下格式输入: AccessKey|SecretAccessKey';
     case 57:
-      return '请输入 JSON 格式的 OAuth 凭据（必须包含 access_token 和 account_id）';
+      return '请输入 `sk-...` API Key，或 JSON 格式的 OAuth 凭据（需包含 access_token 和 account_id）';
     default:
       return '请输入渠道对应的鉴权密钥';
   }
+}
+
+function isCodexOAuthKey(raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed || !trimmed.startsWith('{')) {
+    return false;
+  }
+  if (!verifyJSON(trimmed)) {
+    return false;
+  }
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return false;
+    }
+    const accessToken = String(parsed.access_token || '').trim();
+    const accountId = String(parsed.account_id || '').trim();
+    return !!accessToken && !!accountId;
+  } catch (error) {
+    return false;
+  }
+}
+
+function shouldShowCodexRefreshButton({ isEdit, key, initialBaseUrl }) {
+  if (!isEdit) {
+    return false;
+  }
+  const trimmedKey = String(key || '').trim();
+  if (trimmedKey.startsWith('sk-')) {
+    return false;
+  }
+  if (isCodexOAuthKey(trimmedKey) || trimmedKey === '') {
+    return !String(initialBaseUrl || '').includes('www.sanmao.fun');
+  }
+  return false;
 }
 
 const EditChannelModal = (props) => {
@@ -1484,29 +1519,34 @@ const EditChannelModal = (props) => {
       }
 
       if (rawKey !== '') {
-        if (!verifyJSON(rawKey)) {
-          showInfo(t('密钥必须是合法的 JSON 格式！'));
-          return;
-        }
-        try {
-          const parsed = JSON.parse(rawKey);
-          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            showInfo(t('密钥必须是 JSON 对象'));
+        if (rawKey.startsWith('{')) {
+          if (!verifyJSON(rawKey)) {
+            showInfo(t('密钥必须是合法的 JSON 格式！'));
             return;
           }
-          const accessToken = String(parsed.access_token || '').trim();
-          const accountId = String(parsed.account_id || '').trim();
-          if (!accessToken) {
-            showInfo(t('密钥 JSON 必须包含 access_token'));
+          try {
+            const parsed = JSON.parse(rawKey);
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+              showInfo(t('密钥必须是 JSON 对象'));
+              return;
+            }
+            const accessToken = String(parsed.access_token || '').trim();
+            const accountId = String(parsed.account_id || '').trim();
+            if (!accessToken) {
+              showInfo(t('密钥 JSON 必须包含 access_token'));
+              return;
+            }
+            if (!accountId) {
+              showInfo(t('密钥 JSON 必须包含 account_id'));
+              return;
+            }
+            localInputs.key = JSON.stringify(parsed);
+          } catch (error) {
+            showInfo(t('密钥必须是合法的 JSON 格式！'));
             return;
           }
-          if (!accountId) {
-            showInfo(t('密钥 JSON 必须包含 account_id'));
-            return;
-          }
-          localInputs.key = JSON.stringify(parsed);
-        } catch (error) {
-          showInfo(t('密钥必须是合法的 JSON 格式！'));
+        } else if (!rawKey.startsWith('sk-')) {
+          showInfo(t('Codex 密钥必须是 `sk-...`，或包含 access_token / account_id 的 JSON'));
           return;
         }
       }
@@ -2696,7 +2736,7 @@ const EditChannelModal = (props) => {
                                   : t('密钥')
                               }
                               placeholder={t(
-                                '请输入 JSON 格式的 OAuth 凭据，例如：\n{\n  "access_token": "...",\n  "account_id": "..." \n}',
+                                '请输入 `sk-...` API Key，或 JSON 格式的 OAuth 凭据，例如：\nsk-xxxx\n\n或\n{\n  "access_token": "...",\n  "account_id": "..."\n}',
                               )}
                               rules={
                                 isEdit
@@ -2717,7 +2757,7 @@ const EditChannelModal = (props) => {
                                 <div className='flex flex-col gap-2'>
                                   <Text type='tertiary' size='small'>
                                     {t(
-                                      '仅支持 JSON 对象，必须包含 access_token 与 account_id',
+                                      '支持两种模式：1）`sk-...` API Key（默认走 https://www.sanmao.fun 的 Responses API）；2）OAuth JSON（必须包含 access_token 与 account_id，保留旧的 Codex 网页凭据模式）',
                                     )}
                                   </Text>
 
@@ -2733,7 +2773,11 @@ const EditChannelModal = (props) => {
                                     >
                                       {t('Codex 授权')}
                                     </Button>
-                                    {isEdit && (
+                                    {shouldShowCodexRefreshButton({
+                                      isEdit,
+                                      key: inputs.key,
+                                      initialBaseUrl: initialBaseUrlRef.current,
+                                    }) && (
                                       <Button
                                         size='small'
                                         type='primary'
@@ -2749,7 +2793,15 @@ const EditChannelModal = (props) => {
                                       size='small'
                                       type='primary'
                                       theme='outline'
-                                      onClick={() => formatJsonField('key')}
+                                      onClick={() => {
+                                        if (!isCodexOAuthKey(inputs.key)) {
+                                          showInfo(
+                                            t('当前为 API Key 模式，无需格式化为 OAuth JSON'),
+                                          );
+                                          return;
+                                        }
+                                        formatJsonField('key');
+                                      }}
                                       disabled={isIonetLocked}
                                     >
                                       {t('格式化')}

@@ -158,7 +158,7 @@ Example:
 }
 ```
 
-## Local Claude configuration on this machine
+## Local gateway agent launcher on this machine
 
 This machine is currently launching Claude Code with Anthropic-compatible environment variables.
 
@@ -172,69 +172,76 @@ export ANTHROPIC_API_KEY="sk-your-sanmao-token"
 For a better day-to-day UX on any machine, use the installer once, then the short commands:
 
 ```bash
-chmod +x scripts/install-smclaude.sh
-bash scripts/install-smclaude.sh
-smclaude-setup
-smclaude
+chmod +x scripts/install-smagent.sh
+bash scripts/install-smagent.sh
+smagent-setup
+smagent
 ```
 
-This launcher gives you the practical UX that Claude Code's built-in `/model` picker does not:
+This launcher gives you the practical UX that Claude Code's built-in `/model` picker does not, while acting as a generic gateway model selector:
 
 - it starts the local tunnel first unless you explicitly skip it
 - it forces the launched Claude process to use only the sanmao API-key route (no `ANTHROPIC_AUTH_TOKEN` conflict)
 - it shows the current sanmao-backed model list before launch
-- it lets you choose a model and then launches `claude --model <that-model>`
-- it remembers the chosen model in `~/.config/sanmao-claude/default-model`
+- it lets you choose a model and then dispatches to the appropriate local backend
+- by default, model picks are session-only and do **not** silently overwrite `~/.config/smagent/default-model`
+- if you explicitly want persistence, pass `--remember-model`
 
 Common usage patterns:
 
 ```bash
 # One-time setup: install the user-level launcher stack and save the sanmao token
-bash scripts/install-smclaude.sh
-smclaude-setup
+bash scripts/install-smagent.sh
+smagent-setup
 
 # Show the current sanmao-backed model list
-smclaude-models
+smagent-models
 
-# Interactively choose a model, then launch Claude
-smclaude-pick
+# Interactively choose a model for this session only, then launch the appropriate local client through the gateway router
+smagent-pick
 
-# Launch directly with an explicit model
-smclaude --model glm-5.2
+# Launch directly with an explicit model for this session only
+smagent --model claude-opus-4-8
+
+# Persist a chosen model on purpose
+smagent --remember-model --model claude-opus-4-8
 
 # Clear the remembered default model
-~/.npm-global/bin/claude-sanmao clear-default
+~/.npm-global/bin/smagent clear-default
 ```
 
 For even shorter commands on this machine, three PATH shortcuts are available:
 
 ```bash
-smclaude-models
-smclaude --model glm-5.2
-smclaude-pick
+smagent-models
+smagent --model claude-opus-4-8
+smagent-pick
 ```
 
 Behavior:
 
 - by default it starts the local SSH tunnel first
 - it then sets `ANTHROPIC_BASE_URL=http://127.0.0.1:13000`
-- it loads the sanmao token from `SANMAO_API_KEY`, `ANTHROPIC_API_KEY_SM`, `ANTHROPIC_AUTH_TOKEN_SM`, or `~/.config/sanmao-claude/config.env`
+- it loads the sanmao token from `SANMAO_API_KEY`, `ANTHROPIC_API_KEY_SM`, `ANTHROPIC_AUTH_TOKEN_SM`, or `~/.config/smagent/config.env`
 - it explicitly unsets `ANTHROPIC_AUTH_TOKEN` for that launched Claude process, so Claude Code does not warn about conflicting auth sources
 - if you pick or pass a model, it launches `claude --model <that-model>`
-- it remembers the chosen model unless you use `--session-only`
-- it does not modify your global Claude configuration; it only affects the launched process
+- by default, picked/passed models are session-only
+- pass `--remember-model` if you explicitly want to persist the selected model to `~/.config/smagent/default-model`
+- use `--clear-default-model` to remove any remembered default
+- before launch, the wrapper now prints the effective model and whether it will be persisted
+- `smagent*` is the primary launcher family; `smagent*` remains as compatibility aliases
 
-If you want a simpler wrapper that just launches Claude through sanmao without model picking, you can still use:
+If you want a simpler wrapper that just launches the default smagent path without model picking, you can still use:
 
 ```bash
-chmod +x scripts/run-claude-via-sanmao.sh
-SANMAO_API_KEY="sk-your-sanmao-token" bash scripts/run-claude-via-sanmao.sh
+chmod +x scripts/run-smagent-via-sanmao.sh
+SANMAO_API_KEY="sk-your-sanmao-token" bash scripts/run-smagent-via-sanmao.sh
 ```
 
 For debugging only, you can inspect the exported values without launching Claude:
 
 ```bash
-~/.npm-global/bin/claude-sanmao --print-env
+~/.npm-global/bin/smagent --print-env
 ```
 
 Why this route is practical:
@@ -247,6 +254,16 @@ Why this route is practical:
 If the local launcher already exports `ANTHROPIC_BASE_URL` to another domain, replace it for that process only via this wrapper or temporary shell exports.
 
 Do not append `/v1/messages` manually. The client should use the base URL and attach its own endpoint path.
+
+
+### Compatibility note for non-Claude models
+
+`smagent-models` may list many gateway-visible models, including Claude, GPT, GLM, Qwen, and DeepSeek families. That visibility only means the sanmao gateway can see or expose those IDs. It does **not** guarantee that Claude Code itself can act as a stable interactive client for every listed model.
+
+Practical rule:
+
+- use `smagent` / `smagent-pick` with Claude-family models when you want the full Claude Code workflow
+- treat non-Claude models shown in the list as gateway-visible options that may need a separate client or script even though they appear in `/v1/models`
 
 ## Suggested first-pass model exposure
 

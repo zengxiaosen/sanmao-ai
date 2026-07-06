@@ -42,12 +42,18 @@ func GetCodexChannelUsage(c *gin.Context) {
 		return
 	}
 
-	oauthKey, err := codex.ParseOAuthKey(strings.TrimSpace(ch.Key))
+	credential, err := codex.ParseCredential(strings.TrimSpace(ch.Key))
 	if err != nil {
-		common.SysError("failed to parse oauth key: " + err.Error())
+		common.SysError("failed to parse codex credential: " + err.Error())
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": "解析凭证失败，请检查渠道配置"})
 		return
 	}
+	if credential.Mode == codex.CredentialModeAPIKey {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "当前 Codex API Key 模式不支持账号用量查询"})
+		return
+	}
+
+	oauthKey := credential.OAuthKey
 	accessToken := strings.TrimSpace(oauthKey.AccessToken)
 	accountID := strings.TrimSpace(oauthKey.AccountID)
 	if accessToken == "" {

@@ -28,6 +28,20 @@ type CodexOAuthKey struct {
 	Expired     string `json:"expired,omitempty"`
 }
 
+func detectCodexCredentialMode(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", errors.New("codex channel: empty credential")
+	}
+	if strings.HasPrefix(trimmed, "{") {
+		return "oauth_json", nil
+	}
+	if strings.HasPrefix(trimmed, "sk-") {
+		return "api_key", nil
+	}
+	return "", errors.New("codex channel: credential must be OAuth JSON or an sk- API key")
+}
+
 func parseCodexOAuthKey(raw string) (*CodexOAuthKey, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, errors.New("codex channel: empty oauth key")
@@ -49,6 +63,14 @@ func RefreshCodexChannelCredential(ctx context.Context, channelID int, opts Code
 	}
 	if ch.Type != constant.ChannelTypeCodex {
 		return nil, nil, fmt.Errorf("channel type is not Codex")
+	}
+
+	mode, err := detectCodexCredentialMode(strings.TrimSpace(ch.Key))
+	if err != nil {
+		return nil, nil, err
+	}
+	if mode == "api_key" {
+		return nil, nil, fmt.Errorf("codex channel: API key mode does not support credential refresh")
 	}
 
 	oauthKey, err := parseCodexOAuthKey(strings.TrimSpace(ch.Key))

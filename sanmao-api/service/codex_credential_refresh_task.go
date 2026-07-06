@@ -93,6 +93,11 @@ func runCodexCredentialAutoRefreshOnce() {
 				continue
 			}
 
+			mode, err := detectCodexCredentialMode(rawKey)
+			if err != nil || mode != "oauth_json" {
+				continue
+			}
+
 			oauthKey, err := parseCodexOAuthKey(rawKey)
 			if err != nil {
 				continue

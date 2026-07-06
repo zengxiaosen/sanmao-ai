@@ -18,6 +18,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	oAuthBaseURL  = "https://chatgpt.com"
+	apiKeyBaseURL = "https://www.sanmao.fun"
+)
+
 type Adaptor struct {
 }
 
@@ -134,13 +139,33 @@ func (a *Adaptor) GetChannelName() string {
 	return ChannelName
 }
 
+func GetDefaultBaseURLForCredential(raw string) string {
+	mode, err := DetectCredentialMode(raw)
+	if err != nil {
+		return oAuthBaseURL
+	}
+	if mode == CredentialModeAPIKey {
+		return apiKeyBaseURL
+	}
+	return oAuthBaseURL
+}
+
 func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 	if info.RelayMode != relayconstant.RelayModeResponses && info.RelayMode != relayconstant.RelayModeResponsesCompact {
 		return "", errors.New("codex channel: only /v1/responses and /v1/responses/compact are supported")
 	}
+
+	credential, err := ParseCredential(info.ApiKey)
+	if err != nil {
+		return "", err
+	}
+
 	path := "/backend-api/codex/responses"
+	if credential.Mode == CredentialModeAPIKey {
+		path = "/v1/responses"
+	}
 	if info.RelayMode == relayconstant.RelayModeResponsesCompact {
-		path = "/backend-api/codex/responses/compact"
+		path += "/compact"
 	}
 	return relaycommon.GetFullRequestURL(info.ChannelBaseUrl, path, info.ChannelType), nil
 }
@@ -148,34 +173,35 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *relaycommon.RelayInfo) error {
 	channel.SetupApiRequestHeader(info, c, req)
 
-	key := strings.TrimSpace(info.ApiKey)
-	if !strings.HasPrefix(key, "{") {
-		return errors.New("codex channel: key must be a JSON object")
-	}
-
-	oauthKey, err := ParseOAuthKey(key)
+	credential, err := ParseCredential(info.ApiKey)
 	if err != nil {
 		return err
 	}
 
-	accessToken := strings.TrimSpace(oauthKey.AccessToken)
-	accountID := strings.TrimSpace(oauthKey.AccountID)
+	if credential.Mode == CredentialModeAPIKey {
+		req.Set("Authorization", "Bearer "+credential.APIKey)
+		req.Del("chatgpt-account-id")
+	} else {
+		oauthKey := credential.OAuthKey
+		accessToken := strings.TrimSpace(oauthKey.AccessToken)
+		accountID := strings.TrimSpace(oauthKey.AccountID)
 
-	if accessToken == "" {
-		return errors.New("codex channel: access_token is required")
-	}
-	if accountID == "" {
-		return errors.New("codex channel: account_id is required")
-	}
+		if accessToken == "" {
+			return errors.New("codex channel: access_token is required")
+		}
+		if accountID == "" {
+			return errors.New("codex channel: account_id is required")
+		}
 
-	req.Set("Authorization", "Bearer "+accessToken)
-	req.Set("chatgpt-account-id", accountID)
+		req.Set("Authorization", "Bearer "+accessToken)
+		req.Set("chatgpt-account-id", accountID)
 
-	if req.Get("OpenAI-Beta") == "" {
-		req.Set("OpenAI-Beta", "responses=experimental")
-	}
-	if req.Get("originator") == "" {
-		req.Set("originator", "codex_cli_rs")
+		if req.Get("OpenAI-Beta") == "" {
+			req.Set("OpenAI-Beta", "responses=experimental")
+		}
+		if req.Get("originator") == "" {
+			req.Set("originator", "codex_cli_rs")
+		}
 	}
 
 	// chatgpt.com/backend-api/codex/responses is strict about Content-Type.

@@ -453,6 +453,13 @@ func (channel *Channel) GetBaseURL() string {
 	}
 	url := *channel.BaseURL
 	if url == "" {
+		if channel.Type == constant.ChannelTypeCodex {
+			trimmedKey := strings.TrimSpace(channel.Key)
+			if strings.HasPrefix(trimmedKey, "sk-") {
+				return "https://www.sanmao.fun"
+			}
+			return "https://chatgpt.com"
+		}
 		url = constant.ChannelBaseURLs[channel.Type]
 	}
 	return url
