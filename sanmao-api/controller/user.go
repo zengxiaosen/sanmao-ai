@@ -147,6 +147,32 @@ func Register(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserInputInvalid, map[string]any{"Error": err.Error()})
 		return
 	}
+	user.Email = strings.TrimSpace(user.Email)
+	atIdx := strings.Index(user.Email, "@")
+	if user.Email == "" || atIdx <= 0 || atIdx == len(user.Email)-1 || len(user.Email) > 50 {
+		c.JSON(http.StatusOK, gin.H{
+			"success": false,
+			"message": "请输入有效的邮箱地址",
+		})
+		return
+	}
+	if user.Username == "" {
+		prefix := user.Email[:atIdx]
+		var b strings.Builder
+		for _, r := range prefix {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+				b.WriteRune(r)
+			}
+		}
+		base := b.String()
+		if len(base) > 12 {
+			base = base[:12]
+		}
+		if base == "" {
+			base = "user"
+		}
+		user.Username = base + common.GetRandomString(6)
+	}
 	if common.EmailVerificationEnabled {
 		if user.Email == "" || user.VerificationCode == "" {
 			common.ApiErrorI18n(c, i18n.MsgUserEmailVerificationRequired)
@@ -172,13 +198,11 @@ func Register(c *gin.Context) {
 	cleanUser := model.User{
 		Username:    user.Username,
 		Password:    user.Password,
-		DisplayName: user.Username,
+		DisplayName: user.Email,
 		InviterId:   inviterId,
 		Role:        common.RoleCommonUser, // 明确设置角色为普通用户
 	}
-	if common.EmailVerificationEnabled {
-		cleanUser.Email = user.Email
-	}
+	cleanUser.Email = user.Email
 	if err := cleanUser.Insert(inviterId); err != nil {
 		common.ApiError(c, err)
 		return

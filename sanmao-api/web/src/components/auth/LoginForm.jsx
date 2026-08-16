@@ -260,7 +260,7 @@ const LoginForm = () => {
           showError(message);
         }
       } else {
-        showError('请输入用户名和密码！');
+        showError('请输入邮箱和密码！');
       }
     } catch (error) {
       showError('登录失败，请重试');
@@ -662,7 +662,7 @@ const LoginForm = () => {
                   onClick={handleEmailLoginClick}
                   loading={emailLoginLoading}
                 >
-                  <span className='ml-3'>{t('使用 邮箱或用户名 登录')}</span>
+                  <span className='ml-3'>{t('使用 邮箱 登录')}</span>
                 </Button>
               </div>
 
@@ -765,8 +765,8 @@ const LoginForm = () => {
               <Form className='space-y-3'>
                 <Form.Input
                   field='username'
-                  label={t('用户名或邮箱')}
-                  placeholder={t('请输入您的用户名或邮箱地址')}
+                  label={t('邮箱')}
+                  placeholder={t('请输入您的邮箱地址')}
                   name='username'
                   onChange={(value) => handleChange('username', value)}
                   prefix={<IconMail />}

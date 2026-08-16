@@ -220,11 +220,7 @@ const RegisterForm = () => {
       showInfo('密码长度不得小于 8 位！');
       return;
     }
-    if (password !== password2) {
-      showInfo('两次输入的密码不一致');
-      return;
-    }
-    if (username && password) {
+    if (inputs.email && password) {
       if (turnstileEnabled && turnstileToken === '') {
         showInfo('请稍后几秒重试，Turnstile 正在检查用户环境！');
         return;
@@ -532,7 +528,7 @@ const RegisterForm = () => {
                   onClick={handleEmailRegisterClick}
                   loading={emailRegisterLoading}
                 >
-                  <span className='ml-3'>{t('使用 用户名 注册')}</span>
+                  <span className='ml-3'>{t('使用 邮箱 注册')}</span>
                 </Button>
               </div>
 
@@ -574,12 +570,26 @@ const RegisterForm = () => {
             <div className='px-2 py-8'>
               <Form className='space-y-3'>
                 <Form.Input
-                  field='username'
-                  label={t('用户名')}
-                  placeholder={t('请输入用户名')}
-                  name='username'
-                  onChange={(value) => handleChange('username', value)}
-                  prefix={<IconUser />}
+                  field='email'
+                  label={t('邮箱')}
+                  placeholder={t('输入邮箱地址')}
+                  name='email'
+                  type='email'
+                  onChange={(value) => handleChange('email', value)}
+                  prefix={<IconMail />}
+                  suffix={
+                    showEmailVerification ? (
+                      <Button
+                        onClick={sendVerificationCode}
+                        loading={verificationCodeLoading}
+                        disabled={disableButton || verificationCodeLoading}
+                      >
+                        {disableButton
+                          ? `${t('重新发送')} (${countdown})`
+                          : t('获取验证码')}
+                      </Button>
+                    ) : undefined
+                  }
                 />
 
                 <Form.Input
@@ -592,38 +602,9 @@ const RegisterForm = () => {
                   prefix={<IconLock />}
                 />
 
-                <Form.Input
-                  field='password2'
-                  label={t('确认密码')}
-                  placeholder={t('确认密码')}
-                  name='password2'
-                  mode='password'
-                  onChange={(value) => handleChange('password2', value)}
-                  prefix={<IconLock />}
-                />
 
                 {showEmailVerification && (
                   <>
-                    <Form.Input
-                      field='email'
-                      label={t('邮箱')}
-                      placeholder={t('输入邮箱地址')}
-                      name='email'
-                      type='email'
-                      onChange={(value) => handleChange('email', value)}
-                      prefix={<IconMail />}
-                      suffix={
-                        <Button
-                          onClick={sendVerificationCode}
-                          loading={verificationCodeLoading}
-                          disabled={disableButton || verificationCodeLoading}
-                        >
-                          {disableButton
-                            ? `${t('重新发送')} (${countdown})`
-                            : t('获取验证码')}
-                        </Button>
-                      }
-                    />
                     <Form.Input
                       field='verification_code'
                       label={t('验证码')}
