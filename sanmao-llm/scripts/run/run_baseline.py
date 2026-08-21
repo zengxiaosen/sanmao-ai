@@ -12,8 +12,23 @@ from quant_llm.backtest import build_backtest_frames, summarize_backtest
 from quant_llm.config import load_config, load_project_env
 from quant_llm.data import apply_universe_membership, load_price_panel, load_universe_membership
 from quant_llm.features import FEATURE_COLUMNS, build_price_features
+from quant_llm.factor_analytics import (
+    detect_factor_decay,
+    factor_importance_timeline,
+    return_attribution,
+    rolling_factor_betas,
+    suggest_replacements,
+)
+from quant_llm.macro import (
+    MACRO_FEATURE_COLUMNS,
+    build_macro_features,
+    fetch_macro_panel,
+    join_macro_features,
+)
 from quant_llm.modeling import WalkForwardConfig, fit_final_model, walk_forward_predict
 from quant_llm.paths import build_run_identity, resolve_model_dir, validate_artifact_isolation
+from quant_llm.regime import detect_regimes, factor_regime_performance
+from quant_llm.review import build_review, render_review_markdown
 from quant_llm.text_features import (
     TEXT_FEATURE_COLUMNS,
     build_daily_text_features,
@@ -180,10 +195,10 @@ def main() -> int:
         # 这里的 news_csv/events_csv 来自配置文件，不是脚本硬编码。
         # 以 config/sec_filings_baseline.yaml 为例：
         #   text_features.news_csv:
-        #     /root/autodl-tmp/sanmao-quant-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv
+        #     /root/sanmao-ai/sanmao-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv
         # 以 config/sec_filings_qwen.yaml 为例：
         #   text_features.events_csv:
-        #     /root/autodl-tmp/sanmao-quant-llm/data/us_sec_qwen_xgboost_v1/news/sec_filings_qwen_events.csv
+        #     /root/sanmao-ai/sanmao-llm/data/us_sec_qwen_xgboost_v1/news/sec_filings_qwen_events.csv
         daily_text_features = build_daily_text_features(text_events)
 
         # join_text_features 会按 date + symbol 把文本特征拼到价格特征上。
@@ -192,6 +207,29 @@ def main() -> int:
         # 合并结果之后保存到 training_features.parquet。
         training_features = join_text_features(features, daily_text_features)
         feature_columns.extend(TEXT_FEATURE_COLUMNS)
+
+    # 第三步·补充：可选宏观因子（macro）。
+    #
+    # 宏观因子是“整个市场共享”的大环境指标（VIX 恐慌指数、10年美债收益率、美元指数），
+    # 影响所有股票，尤其压制高估值科技股。它让因子库从“量价+舆情”补齐到三大类。
+    #
+    # 配置示例（config 里加）：
+    #   macro:
+    #     enabled: true
+    # 数据靠 yfinance 拉 ^VIX/^TNX/DX-Y.NYB，无网/限流时按 date 填 0，不影响主链路。
+    macro_config = config.get("macro", {})
+    macro_features = None
+    if macro_config.get("enabled", False):
+        macro_panel = fetch_macro_panel(
+            config["start_date"],
+            config["end_date"],
+            data_dir,
+            allow_synthetic_fallback=config.get("allow_synthetic_fallback", False),
+        )
+        macro_features = build_macro_features(macro_panel)
+        # 宏观只按 date merge（不分股票）。拼到当前 training_features 上。
+        training_features = join_macro_features(training_features, macro_features)
+        feature_columns.extend(MACRO_FEATURE_COLUMNS)
 
     # 第四步：walk-forward 训练和预测。
     # walk-forward 的含义：
@@ -235,6 +273,65 @@ def main() -> int:
     # 这不是自动优化：模型参数没有因为回测结果被自动改动。
     candidate_model = fit_final_model(training_features, config["model"], feature_columns)
     promoted, promotion_reasons = passes_model_promotion_gate(backtest, config.get("model_promotion"))
+
+    # 第六步·补充：可选因子有效性分析（课题 AI 工作流核心）。
+    #
+    # 打开模型黑盒：
+    #   - 因子重要性时间线：模型每个窗口最看重哪些因子（随时间变化）。
+    #   - 滚动回归 beta/t：每个因子和未来收益的关系强不强、还成立吗。
+    #   - 失效检测 + 替换：哪些因子在衰退/失效，用同类里的健康因子替换。
+    #   - 收益归因：把预期收益拆成各因子的贡献。
+    #
+    # 配置示例：
+    #   factor_analytics:
+    #     enabled: true
+    #     beta_window: 60
+    factor_config = config.get("factor_analytics", {})
+    fa_importance = fa_betas = fa_decay = fa_replacements = fa_attribution = None
+    if factor_config.get("enabled", False):
+        wf = WalkForwardConfig(
+            train_window_days=config["train_window_days"],
+            test_window_days=config["test_window_days"],
+            min_train_rows=config["min_train_rows"],
+        )
+        fa_importance = factor_importance_timeline(training_features, wf, config["model"], feature_columns)
+        fa_betas = rolling_factor_betas(training_features, feature_columns, window=factor_config.get("beta_window", 60))
+        # coverage：每个因子的非零天数占比。事件类因子（公告计数）大多数日子是 0，
+        # 样本太稀疏时不能下“衰退/失效”结论，detect_factor_decay 会标成 sparse。
+        factor_coverage = {
+            c: float((pd.to_numeric(training_features[c], errors="coerce").fillna(0.0) != 0).mean())
+            for c in feature_columns
+        }
+        fa_decay = detect_factor_decay(fa_importance, fa_betas, coverage=factor_coverage)
+        # 因子分组：量价 + 舆情（若启用）+ 宏观（若启用）。用于同类替换。
+        groups = {"price_volume": list(FEATURE_COLUMNS)}
+        if text_config.get("enabled", False):
+            groups["sentiment"] = list(TEXT_FEATURE_COLUMNS)
+        if macro_config.get("enabled", False):
+            groups["macro"] = list(MACRO_FEATURE_COLUMNS)
+        fa_replacements = suggest_replacements(fa_decay, groups)
+        fa_attribution = return_attribution(predictions, training_features, fa_betas, feature_columns)
+
+    # 第六步·补充2：可选市场状态识别（P4 regime）。
+    #
+    # 把每天标注成 bull/bear/high_vol/sideways 四种状态，
+    # 并统计每个因子在每种状态下的表现 —— 支撑“因子有效性随市场状态切换”的展示。
+    # 配置示例：
+    #   regime:
+    #     enabled: true
+    regime_config = config.get("regime", {})
+    regimes = None
+    regime_perf = None
+    if regime_config.get("enabled", False):
+        regimes = detect_regimes(
+            features,
+            macro_features,
+            trend_window=regime_config.get("trend_window", 60),
+            trend_threshold=regime_config.get("trend_threshold", 0.08),
+            vix_threshold=regime_config.get("vix_threshold", 25.0),
+        )
+        if fa_betas is not None and not fa_betas.empty:
+            regime_perf = factor_regime_performance(fa_betas, regimes)
 
     prices_path = feature_dir / "prices.parquet"
     features_path = feature_dir / "price_features.parquet"
@@ -290,6 +387,44 @@ def main() -> int:
     latest_signals = backtest_positions.loc[backtest_positions["date"] == latest_date].copy()
     latest_signals["action"] = latest_signals["position"].map({1.0: "long", 0.0: "flat"})
     latest_signals[["date", "symbol", "close", "prob_up", "position", "action"]].to_csv(latest_signals_path, index=False)
+
+    # 因子有效性分析产物（P3）。启用 factor_analytics 时才会生成。
+    if fa_importance is not None:
+        fa_importance.to_parquet(report_dir / "factor_importance_timeline.parquet", index=False)
+        fa_betas.to_parquet(report_dir / "rolling_betas.parquet", index=False)
+        fa_decay.to_parquet(report_dir / "factor_decay.parquet", index=False)
+        fa_replacements.to_parquet(report_dir / "factor_replacements.parquet", index=False)
+        fa_attribution.to_parquet(report_dir / "return_attribution.parquet", index=False)
+
+    # 市场状态产物（P4 regime）。
+    if regimes is not None:
+        regimes.to_parquet(report_dir / "regime_timeline.parquet", index=False)
+        if regime_perf is not None:
+            regime_perf.to_parquet(report_dir / "factor_regime_performance.parquet", index=False)
+
+    # 自动复盘（P4 review）：把本次运行浓缩成 review.json（看板用）+ review.md（人读）。
+    # 配置示例：
+    #   review:
+    #     enabled: true
+    if config.get("review", {}).get("enabled", False):
+        signal_rows = latest_signals[["date", "symbol", "close", "prob_up", "position", "action"]].to_dict("records")
+        latest_signal = None
+        if signal_rows:
+            latest_signal = dict(signal_rows[0])
+            latest_signal["date"] = str(pd.Timestamp(latest_signal["date"]).date())
+        review = build_review(
+            backtest_summary=backtest,
+            decay_table=fa_decay,
+            replacements=fa_replacements,
+            regimes=regimes,
+            latest_signal=latest_signal,
+            importance_timeline=fa_importance,
+            data_range=(str(config["start_date"]), str(config["end_date"])),
+        )
+        (report_dir / "review.json").write_text(
+            json.dumps(review, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+        (report_dir / "review.md").write_text(render_review_markdown(review), encoding="utf-8")
 
     # candidate_model.joblib:
     #   本次运行训练出的候选模型。它一定会保存，方便复盘和比较。

@@ -13,7 +13,7 @@ def main() -> int:
     parser.add_argument("--maxrecords-per-symbol", type=int, default=20)
     parser.add_argument(
         "--output",
-        default="/root/autodl-tmp/sanmao-quant-llm/data/us_gdelt_rule_text_xgboost_v1/news/gdelt_news.csv",
+        default="/root/sanmao-ai/sanmao-llm/data/us_gdelt_rule_text_xgboost_v1/news/gdelt_news.csv",
     )
     args = parser.parse_args()
 

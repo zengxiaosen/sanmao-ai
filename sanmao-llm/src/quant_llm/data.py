@@ -54,6 +54,8 @@ class PriceSource:
             return self._download_alpha_vantage(symbol, start_date, end_date)
         if self.provider == "tiingo":
             return self._download_tiingo(symbol, start_date, end_date)
+        if self.provider == "tencent":
+            return self._download_tencent(symbol, start_date, end_date)
         if self.provider == "baostock":
             return self._download_baostock(symbol, start_date, end_date)
         raise ValueError(f"Unknown market data provider: {self.provider}")
@@ -221,6 +223,88 @@ class PriceSource:
             }
         )
         return self._normalize_ohlcv(frame, symbol)
+
+    def _tencent_symbol(self, symbol: str) -> str:
+        """把项目内部美股 symbol 转成腾讯行情接口的 symbol。
+
+        腾讯接口格式：us + 代码 + 交易所后缀（.OQ=纳斯达克，.N=纽交所）。
+        例如 NVDA.US -> usNVDA.OQ。这里默认试 .OQ，拉不到再由调用方试 .N。
+        """
+        return "us" + symbol.removesuffix(".US").upper()
+
+    @staticmethod
+    def _parse_tencent_payload(payload: dict, tencent_symbol: str) -> list[list]:
+        """从腾讯 K 线接口的 JSON 里取出日线行。
+
+        返回行格式（腾讯约定）：[date, open, close, high, low, volume, ...]。
+        没有数据时返回空列表。
+        """
+        data = payload.get("data")
+        if not isinstance(data, dict):
+            return []
+        entry = data.get(tencent_symbol)
+        if not isinstance(entry, dict):
+            return []
+        # 前复权键叫 qfqday，不复权叫 day；哪个有用哪个。
+        for key in ("qfqday", "day"):
+            rows = entry.get(key)
+            if isinstance(rows, list) and rows:
+                return rows
+        return []
+
+    def _download_tencent(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """用腾讯行情接口下载美股日线（前复权）。
+
+        选它的原因：免费、无需 API key，而且国内服务器可以直连
+        （Yahoo/stooq 在国内连不上，Tiingo/AlphaVantage 要注册 key）。
+
+        接口单次最多返回约 320~800 行，且按 end_date 往前数，
+        所以这里按自然年分页请求再拼起来。
+        """
+        start = pd.Timestamp(start_date)
+        end = pd.Timestamp(end_date)
+        frames: list[pd.DataFrame] = []
+
+        for exchange_suffix in (".OQ", ".N"):
+            tencent_symbol = self._tencent_symbol(symbol) + exchange_suffix
+            frames = []
+            for year in range(start.year, end.year + 1):
+                seg_start = max(start, pd.Timestamp(f"{year}-01-01")).strftime("%Y-%m-%d")
+                seg_end = min(end, pd.Timestamp(f"{year}-12-31")).strftime("%Y-%m-%d")
+                response = requests.get(
+                    "https://web.ifzq.gtimg.cn/appstock/app/usfqkline/get",
+                    params={"param": f"{tencent_symbol},day,{seg_start},{seg_end},320,qfq"},
+                    headers={"User-Agent": "sanmao-quant-llm/0.1"},
+                    timeout=30,
+                )
+                response.raise_for_status()
+                rows = self._parse_tencent_payload(response.json(), tencent_symbol)
+                if not rows:
+                    continue
+                frames.append(
+                    pd.DataFrame(
+                        {
+                            "date": [r[0] for r in rows],
+                            "open": [r[1] for r in rows],
+                            "close": [r[2] for r in rows],
+                            "high": [r[3] for r in rows],
+                            "low": [r[4] for r in rows],
+                            "volume": [r[5] for r in rows],
+                        }
+                    )
+                )
+            if frames:
+                break  # .OQ 拉到了就不用再试 .N
+
+        if not frames:
+            raise ValueError(f"No Tencent daily data returned for {symbol}")
+
+        frame = pd.concat(frames, ignore_index=True)
+        # 接口按 end_date 往前数 320 行，可能带出上一年的尾巴，去重并裁剪到请求区间。
+        frame = frame.drop_duplicates(subset=["date"], keep="last")
+        frame["date"] = pd.to_datetime(frame["date"])
+        mask = (frame["date"] >= start) & (frame["date"] <= end)
+        return self._normalize_ohlcv(frame.loc[mask].sort_values("date"), symbol)
 
     def _download_yahoo_chart(self, symbol: str, start_date: str, end_date: str) -> pd.DataFrame:
         yahoo_symbol = symbol.removesuffix(".US")

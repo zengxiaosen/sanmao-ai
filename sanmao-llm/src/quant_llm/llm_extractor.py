@@ -14,22 +14,48 @@ from quant_llm.text_features import RuleBasedTextExtractor, TextEvent
 # 目标不是让 LLM 直接判断买卖，而是让它把新闻/公告文本转成稳定 JSON。
 # 下游机器学习模型会再把这些 JSON 字段变成表格特征，和价格特征一起训练。
 #
-# /no_think 是 Qwen3 的控制指令：让模型不要输出 <think> 推理过程。
-# 如果不加这个，Qwen3 容易先输出解释文本，导致 JSON 解析失败。
-SYSTEM_PROMPT = """/no_think
-You are a financial information extraction engine.
-Return exactly one compact JSON object and nothing else. Do not explain. Do not use markdown.
+# 当前抽取器走 Claude API（Anthropic SDK），并用 structured outputs 强制 JSON schema，
+# 所以这里不再需要 Qwen 专属的 /no_think 之类控制指令。系统提示只负责说明字段语义，
+# 输出格式由 EVENT_SCHEMA 保证。
+SYSTEM_PROMPT = """You are a financial information extraction engine.
+Turn one piece of financial news or filing text into a single structured event.
 
-Return JSON with keys: event_type, sentiment, confidence, impact_horizon, risk_tags.
-event_type must be one of: earnings, macro, product, management, legal, supply_chain, other.
-sentiment must be a number from -1 to 1.
-confidence must be a number from 0 to 1.
-confidence means extraction reliability, not the probability that the stock will rise.
-Use confidence around 0.85-0.95 only when the text clearly names the company, event, direction, and risk.
-Use confidence around 0.55-0.75 when the event is relevant but mixed, vague, or partly implied.
-Use confidence around 0.20-0.50 when the ticker link or financial impact is weak or uncertain.
-impact_horizon must be one of: intraday, 1-5d, 1-20d, long_term.
-risk_tags must be an array of strings."""
+Field semantics:
+- event_type must be one of: earnings, macro, product, management, legal, supply_chain, other.
+- sentiment is a number from -1 to 1; negative means bearish, positive means bullish.
+- confidence is a number from 0 to 1 and means extraction reliability, NOT the probability that the stock will rise.
+  Use confidence around 0.85-0.95 only when the text clearly names the company, event, direction, and risk.
+  Use confidence around 0.55-0.75 when the event is relevant but mixed, vague, or partly implied.
+  Use confidence around 0.20-0.50 when the ticker link or financial impact is weak or uncertain.
+- impact_horizon must be one of: intraday, 1-5d, 1-20d, long_term.
+- risk_tags is an array of short risk label strings; use an empty array when no clear risk is present."""
+
+
+# EVENT_SCHEMA 是给 Claude structured outputs 用的 JSON schema。
+# 它保证返回内容一定是符合结构的 JSON，省掉旧链路里“正则抓 JSON + 容错解析”的脆弱步骤。
+# 数值范围（sentiment/confidence）JSON schema 不强制，仍由 parse_llm_event_json 里的 _clip 兜底。
+EVENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "event_type": {
+            "type": "string",
+            "enum": sorted(["earnings", "macro", "product", "management", "legal", "supply_chain", "other"]),
+        },
+        "sentiment": {"type": "number"},
+        "confidence": {"type": "number"},
+        "impact_horizon": {
+            "type": "string",
+            "enum": sorted(["intraday", "1-5d", "1-20d", "long_term"]),
+        },
+        "risk_tags": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["event_type", "sentiment", "confidence", "impact_horizon", "risk_tags"],
+    "additionalProperties": False,
+}
+
+# 批量抽新闻属于“分类/抽取”这类简单、量大、对速度和成本敏感的任务，
+# 所以默认用 Claude Haiku 4.5。想要更强的抽取质量，可以在命令行传 --model 换成 Sonnet/Opus。
+DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5"
 
 
 # 白名单：LLM 只能输出这些事件类型。
@@ -54,7 +80,7 @@ def _clip(value: float, low: float, high: float) -> float:
 
 
 def build_extraction_prompt(title: str, body: str, symbol: str) -> str:
-    """把一条新闻拼成 LLM prompt。
+    """把一条新闻拼成给 LLM 的 user 消息。
 
     参数：
         title: 新闻标题。
@@ -62,17 +88,12 @@ def build_extraction_prompt(title: str, body: str, symbol: str) -> str:
         symbol: 股票代码，例如 AAPL.US。
 
     返回：
-        给 Qwen/其他 LLM 的完整文本指令。
-
-    输出要求在 SYSTEM_PROMPT 里已经固定：只能返回 JSON。
+        user 消息文本。系统提示（字段语义）和输出格式（JSON schema）分别由
+        SYSTEM_PROMPT 和 EVENT_SCHEMA 负责，所以这里只提供待抽取的原始内容。
     """
-    return f"""{SYSTEM_PROMPT}
-
-Symbol: {symbol}
+    return f"""Symbol: {symbol}
 Title: {title}
-Text: {body}
-
-JSON:"""
+Text: {body}"""
 
 
 def parse_llm_event_json(text: str, row: pd.Series) -> TextEvent:
@@ -126,40 +147,37 @@ def parse_llm_event_json(text: str, row: pd.Series) -> TextEvent:
     )
 
 
-class TransformersLLMExtractor:
-    """本地 Hugging Face LLM 抽取器。
+class AnthropicLLMExtractor:
+    """基于 Claude API 的文本抽取器。
 
-    这个类是项目里真正调用 Qwen 的地方。
+    这个类是项目里真正调用大模型的地方。它用 Anthropic 官方 SDK 调 Claude，
+    不需要本地 GPU、不下载模型权重，只依赖一个 ANTHROPIC_API_KEY。
 
-    为什么把 transformers import 放在 __init__ 里面：
-        量化主流程不应该强依赖 LLM 推理库。
-        如果只是跑价格特征/回测，不需要安装 transformers/autoawq。
+    为什么把 anthropic import 放在 __init__ 里面：
+        量化主流程（价格特征/训练/回测）不应该强依赖 LLM SDK。
+        只有真的要跑文本抽取时，才需要安装 anthropic。
 
     和 RuleBasedTextExtractor 的关系：
         - RuleBasedTextExtractor：关键词规则，便宜、稳定、但不聪明。
-        - TransformersLLMExtractor：本地大模型，能理解文本，但更慢、更依赖 GPU。
+        - AnthropicLLMExtractor：调用 Claude，能理解文本，需要 API key 和网络。
 
     两者输出都转成 TextEvent，所以下游特征工程不用关心来源。
+
+    为什么用 structured outputs：
+        通过 output_config.format 传入 EVENT_SCHEMA，Claude 会保证返回严格符合 schema 的 JSON，
+        省掉旧本地模型链路里“可能输出解释文本 / 坏 JSON”的问题。数值范围仍由 _clip 兜底。
     """
 
-    def __init__(self, model_path: str, max_new_tokens: int = 192) -> None:
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+    def __init__(self, model: str = DEFAULT_ANTHROPIC_MODEL, max_tokens: int = 512) -> None:
+        import anthropic
 
-        # tokenizer 负责把 prompt 文本转成 token id，也负责把模型输出 token 解码回文本。
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        # 默认构造函数会自动从环境变量读取凭据（ANTHROPIC_API_KEY），
+        # 所以不要在代码里硬编码 key。参见 .env.example。
+        self.client = anthropic.Anthropic()
+        self.model = model
 
-        # model 是真正的本地大模型。
-        # device_map="auto" 会让 transformers 自动把模型放到 GPU/CPU 合适位置。
-        # Qwen3-8B-AWQ 在 48GB 显存上可以直接加载。
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            device_map="auto",
-            trust_remote_code=True,
-        )
-
-        # 限制最多生成多少 token，避免模型啰嗦输出很长文本。
-        # 这里输出一个短 JSON 足够，不需要几千 token。
-        self.max_new_tokens = max_new_tokens
+        # 一个短 JSON 事件足够，不需要很大的输出预算。
+        self.max_tokens = max_tokens
 
     def extract(self, row: pd.Series) -> TextEvent:
         """对单条新闻做 LLM 结构化抽取。
@@ -171,45 +189,22 @@ class TransformersLLMExtractor:
             date, symbol, event_type, sentiment, confidence, impact_horizon, risk_tags
         """
         prompt = build_extraction_prompt(str(row.get("title", "")), str(row.get("body", "")), str(row.get("symbol", "")))
-        messages = [{"role": "user", "content": prompt}]
 
-        # 对 Qwen 这类 chat model，最好用模型自带 chat template。
-        # enable_thinking=False 是 Qwen3 的关键参数：关闭思考文本，只要最终 JSON。
-        if hasattr(self.tokenizer, "apply_chat_template"):
-            try:
-                text = self.tokenizer.apply_chat_template(
-                    messages,
-                    tokenize=False,
-                    add_generation_prompt=True,
-                    enable_thinking=False,
-                )
-            except TypeError:
-                text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        else:
-            text = prompt
-
-        # 把 prompt 转成模型输入，并移动到模型所在设备。
-        inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-
-        # do_sample=False 表示确定性生成：同样输入尽量得到同样输出。
-        # temperature/top_p/top_k 设为 None，是为了避免 generation_config 里的采样参数干扰。
-        output_ids = self.model.generate(
-            **inputs,
-            max_new_tokens=self.max_new_tokens,
-            do_sample=False,
-            temperature=None,
-            top_p=None,
-            top_k=None,
-            pad_token_id=self.tokenizer.eos_token_id,
-        )
-
-        # output_ids 包含“输入 prompt + 新生成内容”。
-        # inputs["input_ids"].shape[-1] 是输入长度，切掉前半段，只保留模型新生成的 JSON。
-        generated = self.tokenizer.decode(output_ids[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
         try:
+            # output_config.format 用 json_schema 约束返回结构；structured outputs 保证
+            # 第一个 text block 就是合法 JSON。system 传字段语义，user 传待抽取内容。
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}],
+                output_config={"format": {"type": "json_schema", "schema": EVENT_SCHEMA}},
+            )
+            generated = next(block.text for block in response.content if block.type == "text")
             return parse_llm_event_json(generated, row)
         except Exception:
-            # 大模型有时仍可能输出坏 JSON。为了让批处理不中断，这里 fallback 到规则抽取器。
+            # 网络错误、限流、API 拒绝或极少数坏 JSON 都可能发生。为了让批处理不中断，
+            # 这里 fallback 到规则抽取器。
             # 注意：生产阶段应该把失败样本记录到日志，方便人工检查和改 prompt。
             return RuleBasedTextExtractor().extract(row)
 

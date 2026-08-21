@@ -8,18 +8,18 @@ symbols:
 
 market: "HK"
 strategy_id: "hk_futu_placeholder_v1"
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/hk_futu_placeholder_v1"
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/hk_futu_placeholder_v1"
+data_dir: "/root/sanmao-ai/sanmao-llm/data/hk_futu_placeholder_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/hk_futu_placeholder_v1"
 
 # 港股后续如果训练模型，也必须写到独立目录，避免覆盖美股/A 股模型。
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/hk_futu_placeholder_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/hk_futu_placeholder_v1"
 
 paper_trading:
   market: "HK"
   starting_cash: 100000
   max_symbol_weight: 0.10
   transaction_cost_bps: 10
-  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/hk_futu_placeholder_v1/paper_trading"
+  output_dir: "/root/sanmao-ai/sanmao-llm/reports/hk_futu_placeholder_v1/paper_trading"
 
 broker:
   provider: "futu"

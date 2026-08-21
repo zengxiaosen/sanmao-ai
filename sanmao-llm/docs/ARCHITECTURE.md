@@ -13,7 +13,7 @@
   -> Parquet + DuckDB + JSON 报告
 ```
 
-新闻、公告、舆情等 LLM 文本特征已经有第一版 pipeline：当前用规则抽取器模拟 LLM 输出，后续替换为真实本地 LLM 或 API LLM。
+新闻、公告、舆情等 LLM 文本特征已经有第一版 pipeline：当前用规则抽取器模拟 LLM 输出，也可切换到 Claude API（`AnthropicLLMExtractor`）做真实抽取。
 
 不熟悉术语时，先看 [CONCEPTS.md](CONCEPTS.md)。里面解释了特征、样本外测试、walk-forward、回测、Parquet、DuckDB、滑点和对账。
 
@@ -51,7 +51,7 @@ LLM 字段和 `prob_up` 的关系见 [CONCEPTS.md](CONCEPTS.md#llm-结构化特�
 
 代码位置：`src/quant_llm/data.py`
 
-加载器会先尝试从 Yahoo chart 接口获取日线 OHLCV 数据。当前 GPU 服务器访问这个接口返回 HTTP 403，所以 baseline 配置中启用了 `allow_synthetic_fallback`。
+加载器会先尝试从 Yahoo chart 接口获取日线 OHLCV 数据。部分服务器环境访问这个接口返回 HTTP 403，所以 baseline 配置中启用了 `allow_synthetic_fallback`。
 
 synthetic fallback 是按 symbol 固定随机种子生成的合成行情。它用于可复现的工程 smoke test，不用于证明策略有效。
 
@@ -161,7 +161,7 @@ LLM 不应该直接输出“买/卖”。它应该把新闻、公告、研报、
   -> prob_up
 ```
 
-当前实现中，`RuleBasedTextExtractor` 暂时模拟这一步，输出同样 schema。这样可以先跑通工程链路，避免一开始就下载大模型、浪费 GPU 时间和磁盘。
+当前实现中，`RuleBasedTextExtractor` 暂时模拟这一步，输出同样 schema；也可切换到 `AnthropicLLMExtractor`（Claude API）做真实抽取。这样可以先跑通工程链路，需要真实抽取时只需配置 `ANTHROPIC_API_KEY`，无需 GPU。
 
 ## 多市场 / 多券商设计原则
 

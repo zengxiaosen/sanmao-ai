@@ -1,5 +1,6 @@
-# 使用 Tiingo 真实日线 + SEC EDGAR 免费 filings + Qwen 本地 LLM 抽取事件的 baseline。
-# 这个配置是“真正让 Qwen 文本特征进入训练/回测”的配置。
+# 使用 Tiingo 真实日线 + SEC EDGAR 免费 filings + Claude API 抽取事件的 baseline。
+# 这个配置是“真正让 LLM 文本特征进入训练/回测”的配置。
+# （文件名和 strategy_id 里的 "qwen" 是历史命名；抽取现在由 Claude API 完成。）
 
 market: "US"
 strategy_id: "us_sec_qwen_xgboost_v1"
@@ -17,13 +18,13 @@ symbols:
 start_date: "2021-01-01"
 end_date: "2026-05-29"
 
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_qwen_xgboost_v1"
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sec_qwen_xgboost_v1"
+data_dir: "/root/sanmao-ai/sanmao-llm/data/us_sec_qwen_xgboost_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/us_sec_qwen_xgboost_v1"
 
 # model_dir:
 #   必须按 market + strategy_id 隔离。
 #   这样美股 Qwen 策略的 latest_model.joblib 不会被 A 股或港股策略覆盖。
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_sec_qwen_xgboost_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/us_sec_qwen_xgboost_v1"
 
 allow_synthetic_fallback: false
 market_data_provider: "tiingo"
@@ -87,7 +88,7 @@ text_features:
 
   # 注意：这里读的是“已经由 Qwen 抽取好的结构化事件 CSV”，不是原始新闻 CSV。
   # run_all.sh 会先检查/生成这个文件，再调用 run_baseline.py。
-  events_csv: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_qwen_xgboost_v1/news/sec_filings_qwen_events.csv"
+  events_csv: "/root/sanmao-ai/sanmao-llm/data/us_sec_qwen_xgboost_v1/news/sec_filings_qwen_events.csv"
 
 # paper_trading:
 #   第一版模拟盘配置。
@@ -97,7 +98,7 @@ paper_trading:
   starting_cash: 100000
   max_symbol_weight: 0.25
   transaction_cost_bps: 5
-  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sec_qwen_xgboost_v1/paper_trading"
+  output_dir: "/root/sanmao-ai/sanmao-llm/reports/us_sec_qwen_xgboost_v1/paper_trading"
 
 # broker:
 #   券商 paper account 接入配置。

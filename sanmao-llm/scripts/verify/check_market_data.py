@@ -13,7 +13,7 @@ def main() -> int:
     parser.add_argument("--symbol", default="AAPL.US")
     parser.add_argument("--start-date", default="2024-01-01")
     parser.add_argument("--end-date", default="2024-03-31")
-    parser.add_argument("--data-dir", default="/root/autodl-tmp/sanmao-quant-llm/data/checks")
+    parser.add_argument("--data-dir", default="/root/sanmao-ai/sanmao-llm/data/checks")
     parser.add_argument("--allow-synthetic-fallback", action="store_true")
     args = parser.parse_args()
 

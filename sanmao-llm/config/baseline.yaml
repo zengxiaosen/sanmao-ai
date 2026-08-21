@@ -21,14 +21,14 @@ start_date: "2018-01-01"
 end_date: "2026-05-29"
 
 # data_dir: 原始行情、特征表、DuckDB 数据库保存目录。
-# 放在 /root/autodl-tmp 是因为服务器系统盘只有 30GB，数据盘更适合放数据和模型。
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_sample_news_xgboost_v1"
+# 默认放在本机项目目录下；换机器时改这里和下面的 report_dir / model_dir 即可。
+data_dir: "/root/sanmao-ai/sanmao-llm/data/us_sample_news_xgboost_v1"
 
 # report_dir: 预测结果和回测指标保存目录。
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_sample_news_xgboost_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/us_sample_news_xgboost_v1"
 
 # 模型目录按 strategy_id 隔离。不要把不同市场/策略都写到同一个 models/ 目录。
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_sample_news_xgboost_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/us_sample_news_xgboost_v1"
 
 # allow_synthetic_fallback:
 # true 表示公共行情源访问失败时，允许生成“合成行情”继续跑工程链路。

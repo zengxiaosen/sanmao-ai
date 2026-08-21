@@ -8,9 +8,9 @@ symbols_file: "cn_a_hs300_symbols.txt"
 start_date: "2021-01-01"
 end_date: "2026-05-29"
 
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/cn_a_baostock_hs300_price_xgboost_v1"
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_hs300_price_xgboost_v1"
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/cn_a_baostock_hs300_price_xgboost_v1"
+data_dir: "/root/sanmao-ai/sanmao-llm/data/cn_a_baostock_hs300_price_xgboost_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/cn_a_baostock_hs300_price_xgboost_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/cn_a_baostock_hs300_price_xgboost_v1"
 
 allow_synthetic_fallback: false
 market_data_provider: "baostock"
@@ -45,4 +45,4 @@ paper_trading:
   starting_cash: 100000
   max_symbol_weight: 0.02
   transaction_cost_bps: 12
-  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_baostock_hs300_price_xgboost_v1/paper_trading"
+  output_dir: "/root/sanmao-ai/sanmao-llm/reports/cn_a_baostock_hs300_price_xgboost_v1/paper_trading"

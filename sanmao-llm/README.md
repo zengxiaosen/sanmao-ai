@@ -32,7 +32,7 @@
 4. 把预测概率转换成一个简单的 long/flat 策略。
 5. 保存 Parquet 特征、DuckDB 视图、预测结果和 JSON 指标。
 
-因为 GPU 服务器访问一些免费行情源受限，默认配置允许 synthetic fallback（合成行情 fallback）。这只能证明代码链路可运行，不能证明策略有效。
+因为部分免费行情源在服务器上访问受限，默认配置允许 synthetic fallback（合成行情 fallback）。这只能证明代码链路可运行，不能证明策略有效。
 
 ## 当前预测目标
 
@@ -74,7 +74,7 @@ sanmao-quant-llm/
     README.md                  # scripts/env/run/verify 三类脚本说明
     env/                       # 环境准备：依赖、模型、代理
     run/                       # 正式运行：拉数据、特征、训练、回测
-    verify/                    # 测试验证：行情检查、Qwen smoke test
+    verify/                    # 测试验证：行情检查、报告查看
   src/
     quant_llm/
       backtest.py              # long/flat 回测指标
@@ -94,30 +94,26 @@ sanmao-quant-llm/
 from quant_llm.features import build_price_features
 ```
 
-## 在 GPU 服务器上运行
+## 在服务器上运行
+
+当前主线在本机运行：
 
 ```bash
-ssh seeta-gpu
-cd /root/autodl-tmp/sanmao-quant-llm
+cd /root/sanmao-ai/sanmao-llm
 .venv/bin/pytest -q
 bash scripts/run/run_all.sh
 ```
 
-服务器重启或关机后恢复环境：
+首次或重装环境：
 
 ```bash
 bash scripts/env/bootstrap_server.sh
 ```
 
-如果你要把远端 Qwen3-Coder 当作 OpenAI-compatible coding model 用，查看：
+LLM 文本抽取走 Claude API，只需要先设置 key（放进 `.env` 或导出环境变量）：
 
 ```bash
-bash scripts/verify/show_qwen3_coder_endpoint.sh
-bash scripts/verify/check_qwen3_coder_vllm.sh
-bash scripts/verify/show_qwen3_coder_clients.sh
-bash scripts/verify/show_aider_qwen3_coder.sh
-bash scripts/verify/show_openhands_qwen3_coder.sh
-bash scripts/verify/smoke_qwen3_coder_agent.sh
+export ANTHROPIC_API_KEY=...   # 见 .env.example
 ```
 
 输出文件：
@@ -226,7 +222,7 @@ universe_membership_csv: "cn_a_zz500_membership_daily.csv"
   --output config/cn_a_zz500_membership_historical.csv
 ```
 
-如果不是在 GPU 服务器上运行，需要把 `config/baseline.yaml` 里的 `data_dir` 和 `report_dir` 改成本地可写目录。
+换机器运行时，把 `config/baseline.yaml`（以及其它 config）里的 `data_dir`、`report_dir`、`model_dir` 改成本机可写目录即可。当前默认路径是 `/root/sanmao-ai/sanmao-llm/...`。
 
 ## 当前安全边界
 
@@ -247,8 +243,8 @@ universe_membership_csv: "cn_a_zz500_membership_daily.csv"
 
 ## 当前限制
 
-1. Stooq 在服务器测试时返回 API key/captcha 提示。
-2. Yahoo chart 在 GPU 服务器上返回 HTTP 403。
+1. Stooq 在部分环境测试时返回 API key/captcha 提示。
+2. Yahoo chart 在部分服务器环境返回 HTTP 403。
 3. 当前 synthetic fallback 只用于验证工程链路。
 4. 第一版 baseline 只有价格特征，还没有新闻/舆情/LLM 特征。
 5. 本工程中的任何结果都不构成投资建议。

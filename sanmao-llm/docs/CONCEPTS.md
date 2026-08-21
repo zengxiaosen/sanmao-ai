@@ -1287,9 +1287,9 @@ vs
 
 这说明订单失败、接口异常、状态同步错误，必须停止自动交易并报警。
 
-## 为什么需要服务器启动脚本
+## 为什么需要环境启动脚本
 
-你的 GPU 机器按小时计费，睡觉或不用时关机是合理的。
+换机器或重装环境时，需要一键把 `.venv` 和目录准备好。
 
 所以仓库里提供：
 
@@ -1297,11 +1297,10 @@ vs
 scripts/env/bootstrap_server.sh
 ```
 
-服务器重启后可以运行：
+在项目目录运行：
 
 ```bash
-ssh seeta-gpu
-cd /root/autodl-tmp/sanmao-quant-llm
+cd /root/sanmao-ai/sanmao-llm
 bash scripts/env/bootstrap_server.sh
 ```
 

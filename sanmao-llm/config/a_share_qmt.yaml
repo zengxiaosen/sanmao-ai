@@ -7,16 +7,16 @@ symbols:
 
 market: "CN_A"
 strategy_id: "cn_a_qmt_placeholder_v1"
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/cn_a_qmt_placeholder_v1"
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_qmt_placeholder_v1"
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/cn_a_qmt_placeholder_v1"
+data_dir: "/root/sanmao-ai/sanmao-llm/data/cn_a_qmt_placeholder_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/cn_a_qmt_placeholder_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/cn_a_qmt_placeholder_v1"
 
 paper_trading:
   market: "CN_A"
   starting_cash: 100000
   max_symbol_weight: 0.10
   transaction_cost_bps: 8
-  output_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/cn_a_qmt_placeholder_v1/paper_trading"
+  output_dir: "/root/sanmao-ai/sanmao-llm/reports/cn_a_qmt_placeholder_v1/paper_trading"
 
 broker:
   provider: "qmt"

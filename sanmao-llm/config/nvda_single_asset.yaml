@@ -1,0 +1,99 @@
+# nvda_single_asset.yaml —— 交大高金课题：单一资产（NVDA）自适应因子系统配置
+#
+# 这个文件是整条流水线的“遥控器”：run_baseline.py 读它，决定
+#   选哪只股票、拉哪段历史、用什么模型、哪些因子进模型、结果写哪里。
+# 改这个 YAML 就能改整个实验，不用动 Python 代码。
+#
+# 当前是 P0 阶段：只用“现成的量价因子 + 舆情因子”跑通链路。
+# 后续 P2/P3/P4 会在这里加 macro / factor_analytics / regime / review 配置块。
+
+# market: 市场。US = 美股。
+market: "US"
+
+# strategy_id: 这次实验的唯一名字。所有产物目录都用它隔离，
+# 保证 NVDA 的模型/结果不会覆盖别的实验。
+strategy_id: "nvda_single_asset_v1"
+
+# symbols: 只研究一只股票 —— 英伟达。课题要求“单一资产”。
+# .US 是项目内部约定，拉数据时会自动去掉。
+symbols:
+  - NVDA.US
+
+# 回测数据时间范围。2018 起覆盖牛市、疫情、加息、AI 行情等多种市场环境，
+# 方便后面展示“因子在不同 regime 下有效性变化”。
+start_date: "2018-01-01"
+end_date: "2026-08-18"
+
+# 产物目录（按 strategy_id 隔离）。
+data_dir: "/root/sanmao-ai/sanmao-llm/data/nvda_single_asset_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/nvda_single_asset_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/nvda_single_asset_v1"
+
+# allow_synthetic_fallback: false 表示行情拉不到就直接报错，绝不用合成假数据顶替。
+# （P0 阶段曾设 true 跑通链路；现在行情/宏观都换成了国内可直连的真实数据源，
+#   合成数据只会误导演示，所以关掉。）
+allow_synthetic_fallback: false
+
+# 行情数据源。tencent = 腾讯行情接口（免费、无需 key、国内服务器可直连，前复权日线）。
+# 备选：tiingo / yfinance / alpha_vantage（都需要翻墙或 API key）。
+market_data_provider: "tencent"
+
+# 预测“下一交易日”涨跌。1 = 明天。
+prediction_horizon_days: 1
+
+# walk-forward 窗口：用过去 756 个交易日（约3年）训练，
+# 再预测未来 63 个交易日（约1季度）这段“没见过的”数据。滚动向前。
+train_window_days: 756
+test_window_days: 63
+
+# 单资产每天只有 1 行样本，历史样本量比多股票少很多，
+# 所以把最少训练行数从 500 降到 200，否则很多窗口会被跳过。
+min_train_rows: 200
+
+# long/flat 阈值：模型给出的上涨概率 prob_up >= 0.55 才买入/持有，否则空仓。
+probability_threshold: 0.55
+
+# 交易成本，5 bps = 0.05%，仓位变化时扣除，模拟佣金+点差+滑点。
+transaction_cost_bps: 5
+
+# 预测模型：XGBoost（决策树集成，量化表格数据的标准选择，还能给出因子重要性）。
+model:
+  kind: "xgboost"
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+
+# text_features: 舆情因子。数据源 = SEC EDGAR 官方公告（免费、免 key）：
+# NVDA 2018→今 的 8-K（重大事件）/10-Q（季报）/10-K（年报），共 80+ 条真实公告，
+# 由 scripts/run/fetch_sec_filings.py 拉取。抽取器当前为规则版（关键词→情绪/事件类型），
+# 后续可换 Claude API（AnthropicLLMExtractor）做真正的语义抽取。
+text_features:
+  enabled: true
+  news_csv: "/root/sanmao-ai/sanmao-llm/data/nvda_single_asset_v1/news/sec_filings.csv"
+
+# macro: 宏观因子。开启后拉 VIX/10年美债/美元指数，补齐因子库的“宏观”大类。
+# 数据源是 FRED（圣路易斯联储官方 CSV 接口，免 key、国内可直连），
+# 拉失败时按 date 填 0，不影响主链路。
+macro:
+  enabled: true
+
+# factor_analytics: 因子有效性分析（P3，课题 AI 工作流核心）。
+# 产出：因子重要性时间线 / 滚动 beta+t 值 / 失效检测 / 同类替换建议 / 收益归因。
+factor_analytics:
+  enabled: true
+  beta_window: 60   # 滚动回归窗口（交易日）
+
+# regime: 市场状态识别（P4）。每天标注 bull/bear/high_vol/sideways，
+# 并统计各因子在不同状态下的表现（因子有效性随市场状态切换的证据）。
+regime:
+  enabled: true
+  trend_window: 60        # 趋势观察窗口（交易日）
+  trend_threshold: 0.08   # 60日涨/跌超过 8% 认定为 bull/bear
+  vix_threshold: 25.0     # VIX 高于 25 认定为高波动
+
+# review: 自动复盘（P4）。每次跑完生成 review.json（看板）+ review.md（人读），
+# 内容：当前市场状态、回测表现、最依赖因子、失效因子与替换建议、最新信号。
+review:
+  enabled: true

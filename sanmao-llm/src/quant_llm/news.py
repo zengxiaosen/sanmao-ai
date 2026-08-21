@@ -38,6 +38,13 @@ def fetch_sec_filings(
     limit_per_symbol: int = 50,
 ) -> pd.DataFrame:
     forms = forms or ["8-K", "10-Q", "10-K"]
+    # 每种 SEC 表格的人话描述。写进 title/body 是为了让下游文本抽取器
+    # 能从关键词判断事件类型（earnings 等），而不是只看到 "10-Q" 这种代号。
+    form_descriptions = {
+        "10-Q": "quarterly earnings report with revenue and margin details",
+        "10-K": "annual earnings report with revenue, growth and risk factors",
+        "8-K": "material corporate event disclosure",
+    }
     ticker_to_cik = load_sec_company_tickers()
     rows: list[dict] = []
     start = pd.Timestamp(start_date)
@@ -69,12 +76,16 @@ def fetch_sec_filings(
                 continue
             accession_nodash = accession.replace("-", "")
             url = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{accession_nodash}/{primary_doc}"
+            description = form_descriptions.get(form, "corporate filing")
             rows.append(
                 {
                     "date": date,
                     "symbol": symbol,
-                    "title": f"SEC filing {form} for {ticker}",
-                    "body": f"{ticker} filed {form}. Filing date: {filing_date}. Report date: {report_date}.",
+                    "title": f"{ticker} files SEC {form}: {description}",
+                    "body": (
+                        f"{ticker} filed SEC form {form} ({description}). "
+                        f"Filing date: {filing_date}. Report date: {report_date}."
+                    ),
                     "source": "sec.gov",
                     "url": url,
                     "tags": form,

@@ -9,7 +9,7 @@ set -euo pipefail
 #   - 只读取 latest_model 和最新特征
 #   - 写 reports/<strategy_id>/paper_trading/ 下的模拟信号、模拟订单、模拟持仓
 
-PROJECT_DIR="${PROJECT_DIR:-/root/autodl-tmp/sanmao-quant-llm}"
+PROJECT_DIR="${PROJECT_DIR:-/root/sanmao-ai/sanmao-llm}"
 QUANT_PYTHON="${QUANT_PYTHON:-$PROJECT_DIR/.venv/bin/python}"
 CONFIG_PATH="${CONFIG_PATH:-config/sec_filings_qwen.yaml}"
 PAPER_OUTPUT_DIR="${PAPER_OUTPUT_DIR:-$PROJECT_DIR/reports/us_sec_qwen_xgboost_v1/paper_trading}"

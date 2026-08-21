@@ -3,19 +3,16 @@ set -euo pipefail
 
 # run 目录总入口：一键完成“取数据 -> LLM 抽取 -> 拼特征 -> 训练 -> 预测 -> 回测”。
 #
-# 在服务器运行：
-#   cd /root/autodl-tmp/sanmao-quant-llm
+# 用法：
+#   cd /root/sanmao-ai/sanmao-llm
 #   bash scripts/run/run_all.sh
 #
 # 说明：
-#   - 当前主线已经切到 Qwen3-Coder vLLM coding-agent 服务。
-#   - 这个脚本不再依赖旧 qwen3-8b-awq 默认模型，也不再自动调用本地 8B 抽取链路。
-#   - 现阶段 run_all.sh 只负责研究 / 回测主链路，不再试图在这里维护旧模型兼容抽取。
-#   - 如果后续要把文本事件抽取升级为 API / vLLM 服务化版本，应单独增加新的抽取入口，而不是回退到旧 8B。
+#   - LLM 文本抽取走 Claude API（scripts/run/extract_news_with_llm.py），不需要 GPU。
+#   - run_all.sh 只负责研究 / 回测主链路；文本事件抽取作为独立上游步骤（见下方第 3 步提示）。
 
-PROJECT_DIR="${PROJECT_DIR:-/root/autodl-tmp/sanmao-quant-llm}"
+PROJECT_DIR="${PROJECT_DIR:-/srv/dev/web-ui/sanmao-llm}"
 QUANT_PYTHON="${QUANT_PYTHON:-$PROJECT_DIR/.venv/bin/python}"
-HF_HOME="${HF_HOME:-/root/autodl-tmp/hf}"
 STRATEGY_ID="${STRATEGY_ID:-us_sec_qwen_xgboost_v1}"
 CONFIG_PATH="${CONFIG_PATH:-config/sec_filings_qwen.yaml}"
 DATA_DIR="${DATA_DIR:-$PROJECT_DIR/data/$STRATEGY_ID}"
@@ -25,13 +22,12 @@ MODEL_OUTPUT_DIR="${MODEL_OUTPUT_DIR:-$PROJECT_DIR/models/$STRATEGY_ID}"
 # 当前主链路使用 SEC 免费公告/财报 filings 作为文本源。
 RAW_NEWS_CSV="${RAW_NEWS_CSV:-$DATA_DIR/news/sec_filings.csv}"
 
-# Qwen 抽取后的结构化事件文件。
-# run_baseline.py 会读取 config/sec_filings_qwen.yaml 中的 events_csv，
-# 也就是这个文件。
-QWEN_EVENTS_CSV="${QWEN_EVENTS_CSV:-$DATA_DIR/news/sec_filings_qwen_events.csv}"
+# LLM 抽取后的结构化事件文件。
+# run_baseline.py 会读取 config/sec_filings_qwen.yaml 中的 events_csv，也就是这个文件。
+# （strategy_id 里的 "qwen" 只是历史命名，当前抽取实际由 Claude API 完成。）
+LLM_EVENTS_CSV="${LLM_EVENTS_CSV:-$DATA_DIR/news/sec_filings_qwen_events.csv}"
 
-# 为了省 GPU 时间，默认先抽取 30 条 SEC 文本做端到端验证。
-# 后续要全量跑，把 LLM_LIMIT=0。
+# 调试抽取时先抽前 N 条 SEC 文本做端到端验证；全量跑设 LLM_LIMIT=0。
 LLM_LIMIT="${LLM_LIMIT:-30}"
 
 cd "$PROJECT_DIR"
@@ -47,23 +43,24 @@ echo "== 2/5 Fetch SEC filings raw text =="
   --end-date 2026-05-31 \
   --output "$RAW_NEWS_CSV"
 
-echo "== 3/5 Ensure Qwen structured events =="
-if [[ ! -s "$QWEN_EVENTS_CSV" ]]; then
-  echo "Missing Qwen structured events: $QWEN_EVENTS_CSV" >&2
-  echo "Generate them through the maintained extractor workflow before running run_all.sh." >&2
+echo "== 3/5 Ensure LLM structured events =="
+if [[ ! -s "$LLM_EVENTS_CSV" ]]; then
+  echo "Missing LLM structured events: $LLM_EVENTS_CSV" >&2
+  echo "Generate them first (needs ANTHROPIC_API_KEY, or use --rule-fallback-only), e.g.:" >&2
+  echo "  $QUANT_PYTHON scripts/run/extract_news_with_llm.py --news-csv $RAW_NEWS_CSV --output $LLM_EVENTS_CSV --limit $LLM_LIMIT" >&2
   exit 1
 else
-  echo "Qwen events already exist, reuse: $QWEN_EVENTS_CSV"
+  echo "LLM events already exist, reuse: $LLM_EVENTS_CSV"
   echo "Delete this file if you want to re-run the upstream extractor pipeline."
 fi
 
-echo "== 4/5 Train/predict/backtest with Qwen text events =="
+echo "== 4/5 Train/predict/backtest with LLM text events =="
 "$QUANT_PYTHON" scripts/run/run_baseline.py \
   --config "$CONFIG_PATH"
 
 echo "== 5/5 Outputs =="
 echo "Raw SEC text:       $RAW_NEWS_CSV"
-echo "Qwen events:        $QWEN_EVENTS_CSV"
+echo "LLM events:         $LLM_EVENTS_CSV"
 echo "Training features:  $DATA_DIR/features/training_features.parquet"
 echo "Predictions:        $REPORT_DIR/predictions.parquet"
 echo "Backtest daily CSV: $REPORT_DIR/backtest_daily.csv"

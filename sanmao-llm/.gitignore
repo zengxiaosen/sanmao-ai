@@ -1,0 +1,22 @@
+# 环境与密钥（绝不提交）
+.env
+.env.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# 运行产物（由 run_baseline.py 生成，不进版本库）
+data/
+reports/
+models/
+logs/
+*.duckdb
+
+# 前端
+node_modules/
+dist/
+.angular/

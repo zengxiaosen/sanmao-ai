@@ -13,9 +13,9 @@ symbols:
 start_date: "2024-01-01"
 end_date: "2026-05-29"
 
-data_dir: "/root/autodl-tmp/sanmao-quant-llm/data/us_gdelt_rule_text_xgboost_v1"
-report_dir: "/root/autodl-tmp/sanmao-quant-llm/reports/us_gdelt_rule_text_xgboost_v1"
-model_dir: "/root/autodl-tmp/sanmao-quant-llm/models/us_gdelt_rule_text_xgboost_v1"
+data_dir: "/root/sanmao-ai/sanmao-llm/data/us_gdelt_rule_text_xgboost_v1"
+report_dir: "/root/sanmao-ai/sanmao-llm/reports/us_gdelt_rule_text_xgboost_v1"
+model_dir: "/root/sanmao-ai/sanmao-llm/models/us_gdelt_rule_text_xgboost_v1"
 
 allow_synthetic_fallback: false
 market_data_provider: "tiingo"
@@ -37,4 +37,4 @@ model:
 
 text_features:
   enabled: true
-  news_csv: "/root/autodl-tmp/sanmao-quant-llm/data/us_gdelt_rule_text_xgboost_v1/news/gdelt_news.csv"
+  news_csv: "/root/sanmao-ai/sanmao-llm/data/us_gdelt_rule_text_xgboost_v1/news/gdelt_news.csv"

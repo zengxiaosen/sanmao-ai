@@ -108,7 +108,7 @@ prob_up < threshold -> flat
 下一步：
 
 1. 更好的新闻源质量后续再优化，例如 GDELT ticker linking、RSS、Finnhub free。
-2. 当前优先把 `RuleBasedTextExtractor` 替换成本地 LLM 或 API LLM。
+2. 当前优先把 `RuleBasedTextExtractor` 的输出替换成 Claude API（`AnthropicLLMExtractor`）真实抽取。
 3. 增加一键 pipeline runner，把拉数据、生成文本特征、训练、回测串起来。
 4. 对比“只有价格特征”和“价格 + SEC filings 特征”和“价格 + 新闻特征”的样本外表现。
 5. 增加 LLM 输出校验，防止 JSON 字段缺失或乱填。

@@ -12,7 +12,7 @@ def main() -> int:
     parser.add_argument("--start-date", required=True)
     parser.add_argument("--end-date", required=True)
     parser.add_argument("--limit", type=int, default=100)
-    parser.add_argument("--output", default="/root/autodl-tmp/sanmao-quant-llm/data/us_tiingo_news_raw/news/tiingo_news.csv")
+    parser.add_argument("--output", default="/root/sanmao-ai/sanmao-llm/data/us_tiingo_news_raw/news/tiingo_news.csv")
     args = parser.parse_args()
 
     load_project_env()

@@ -38,7 +38,7 @@ set -euo pipefail
 #   Qwen extractor 当前由 scripts/run/extract_news_with_llm.py 单独验证。
 #   后续要做的是新增配置，让 run_baseline.py 可以直接读取 Qwen events。
 
-PROJECT_DIR="${PROJECT_DIR:-/root/autodl-tmp/sanmao-quant-llm}"
+PROJECT_DIR="${PROJECT_DIR:-/root/sanmao-ai/sanmao-llm}"
 CONFIG_PATH="${CONFIG_PATH:-config/sec_filings_baseline.yaml}"
 STRATEGY_ID="${STRATEGY_ID:-us_sec_rule_text_xgboost_v1}"
 DATA_DIR="${DATA_DIR:-$PROJECT_DIR/data/$STRATEGY_ID}"

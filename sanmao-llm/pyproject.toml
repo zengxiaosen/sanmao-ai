@@ -22,10 +22,13 @@ dependencies = [
 
 [project.optional-dependencies]
 llm = [
-  "accelerate>=0.33",
-  "bitsandbytes>=0.43",
-  "transformers>=4.44",
-  "huggingface_hub>=0.24",
+  "anthropic>=0.40",
+]
+api = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "psycopg[binary]>=3.1",
+  "sqlalchemy>=2.0",
 ]
 futu = [
   "futu-api>=9.0",

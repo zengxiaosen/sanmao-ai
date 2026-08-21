@@ -111,7 +111,7 @@ date, open, high, low, close, volume, symbol
 
 `yfinance` 很适合本地研究，但不是正式数据源。
 
-当前 GPU 服务器实测：
+部分服务器环境实测：
 
 ```text
 YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')

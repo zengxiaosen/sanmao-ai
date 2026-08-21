@@ -13,7 +13,7 @@ def main() -> int:
     parser.add_argument("--end-date", required=True)
     parser.add_argument("--forms", nargs="+", default=["8-K", "10-Q", "10-K"])
     parser.add_argument("--limit-per-symbol", type=int, default=50)
-    parser.add_argument("--output", default="/root/autodl-tmp/sanmao-quant-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv")
+    parser.add_argument("--output", default="/root/sanmao-ai/sanmao-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv")
     args = parser.parse_args()
 
     load_project_env()

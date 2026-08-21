@@ -1,64 +1,36 @@
 # Pipeline 数据流说明
 
-这份文档解释 `start_server_workflow.sh`、`run_sec_pipeline.sh`、`run_baseline.py` 之间到底怎么联动，以及文件写到哪里。
+这份文档解释 `run_sec_pipeline.sh`、`run_all.sh`、`run_baseline.py` 之间到底怎么联动，以及文件写到哪里。
 
 ## 先说结论
 
-脚本现在分成三个目录：
+脚本分成三个目录：
 
 ```text
-scripts/env/      环境准备：装依赖、下载模型、开代理隧道
+scripts/env/      环境准备：创建 .venv、装依赖
 scripts/run/      正式运行：拉数据、生成特征、训练、回测、LLM 抽取
-scripts/verify/   测试验证：检查行情、检查 Qwen、开机后一键验证
+scripts/verify/   测试验证：检查行情、查看报告、一键验证
 ```
 
 三个目录各自有总入口：
 
 ```text
-scripts/env/setup_server_all.sh      新机器完整部署
+scripts/env/bootstrap_server.sh      创建/更新环境
 scripts/run/run_all.sh               正式研究链路总入口
 scripts/verify/verify_all.sh         验证当前机器是否正常
 ```
 
-`scripts/verify/start_server_workflow.sh` 不是下载大模型的脚本。
-
-它做的是“服务器已经部署好之后的一键启动/验证”：
+`scripts/verify/verify_all.sh` 做的是“环境已经装好之后的一键验证”：
 
 ```text
 1. 跑 pytest，确认量化代码没坏。
-2. 跑 run_sec_pipeline.sh，执行 SEC + Tiingo baseline。
-3. 跑 Qwen smoke test，确认本地大模型还能加载并输出 JSON。
-4. 用 Qwen 对 sample_news.csv 抽 3 条样例，确认 extractor 可用。
+2. 跑 check_market_data.py，确认 Tiingo 行情可用。
+3. 跑 run_all.sh，执行取数据 -> LLM 抽取 -> 特征 -> 训练 -> 回测全链路。
 ```
 
-下载大模型在这里：
+## LLM 抽取
 
-```text
-scripts/env/setup_server_all.sh
-scripts/env/download_llm_model.sh
-```
-
-当前模型目录：
-
-```text
-/root/autodl-tmp/models/qwen3-8b-awq
-```
-
-当前 Hugging Face 缓存目录：
-
-```text
-/root/autodl-tmp/hf
-```
-
-当前 LLM 环境目录：
-
-```text
-/root/autodl-tmp/llm-env
-```
-
-## start_server_workflow.sh 写哪些文件
-
-它会间接或直接生成：
+抽取走 Claude API（`AnthropicLLMExtractor`），不需要 GPU、不下载模型权重，只需要 `ANTHROPIC_API_KEY`。默认模型 `claude-haiku-4-5`；没有 key 时可用 `extract_news_with_llm.py --rule-fallback-only` 跳过 API。
 
 ```text
 data/<strategy_id>/news/sec_filings.csv
@@ -117,7 +89,7 @@ run_sec_pipeline.sh
 ```yaml
 text_features:
   enabled: true
-  news_csv: "/root/autodl-tmp/sanmao-quant-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv"
+  news_csv: "/root/sanmao-ai/sanmao-llm/data/us_sec_rule_text_xgboost_v1/news/sec_filings.csv"
 ```
 
 也就是说：

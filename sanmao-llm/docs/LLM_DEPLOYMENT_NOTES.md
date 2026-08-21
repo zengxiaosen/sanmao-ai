@@ -1,5 +1,9 @@
 # LLM 部署经验记录
 
+> ⚠️ **已归档（历史参考）。** 本工程当前不自部署 LLM，文本抽取直接走 Claude API
+> （见 [MODEL_STRATEGY.md](MODEL_STRATEGY.md) 和 [SERVER_DEPLOYMENT.md](SERVER_DEPLOYMENT.md)）。
+> 下面记录的是早期在 GPU 上自部署 Qwen 的踩坑经验，仅在未来重新评估自部署时作参考，不代表当前做法。
+
 这份文档记录本项目在远端 GPU 上部署、升级、替换和优化本地 LLM 的经验，方便以后换机器、换模型或服务化时复现。
 
 ## 当前结论
