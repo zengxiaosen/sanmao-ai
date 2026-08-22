@@ -20,6 +20,7 @@ from pathlib import Path
 import pandas as pd
 import psycopg2
 from psycopg2.extras import execute_values
+from sqlalchemy import create_engine
 
 DEFAULT_DSN = "postgresql://sanmao:sanmao123456@127.0.0.1:5432/sanmao"
 PG_ENV_PATH = "/opt/sanmao/sanmao-api/pg.env"
@@ -52,10 +53,23 @@ class MarketDataStore:
 
     def __init__(self, dsn: str | None = None):
         self.dsn = resolve_dsn(dsn)
+        self._engine = None
         self._init_db()
 
     def _connect(self):
         return psycopg2.connect(self.dsn)
+
+    @property
+    def engine(self):
+        """pandas 只认 SQLAlchemy connectable，读操作走这个。
+
+        写操作仍用 psycopg2 —— execute_values 的批量插入快得多，
+        没有理由为了统一而换掉。engine 懒加载，避免只写不读时白建连接池。
+        """
+        if self._engine is None:
+            dsn = self.dsn.replace("postgresql://", "postgresql+psycopg2://", 1)
+            self._engine = create_engine(dsn, pool_pre_ping=True)
+        return self._engine
 
     def _init_db(self) -> None:
         with self._connect() as conn, conn.cursor() as cur:
@@ -180,8 +194,8 @@ class MarketDataStore:
             f"SELECT symbol,date,open,high,low,close,volume FROM {MARKET_TABLE} "
             f"WHERE {' AND '.join(clauses)} ORDER BY symbol,date"
         )
-        with self._connect() as conn:
-            frame = pd.read_sql_query(sql, conn, params=params)
+        with self.engine.connect() as conn:
+            frame = pd.read_sql_query(sql, conn, params=tuple(params))
         if not frame.empty:
             frame["date"] = pd.to_datetime(frame["date"])
         return frame
@@ -194,8 +208,8 @@ class MarketDataStore:
             sql += " WHERE symbol = %s"
             params.append(symbol)
         sql += " ORDER BY symbol"
-        with self._connect() as conn:
-            return pd.read_sql_query(sql, conn, params=params or None)
+        with self.engine.connect() as conn:
+            return pd.read_sql_query(sql, conn, params=tuple(params) or None)
 
     def has_data(self, symbol: str, min_rows: int = 100) -> bool:
         """够不够用来建模——不够就该去下载。"""
