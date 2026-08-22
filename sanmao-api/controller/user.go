@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
@@ -247,6 +248,36 @@ func Register(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
+	return
+}
+
+func GetUserTotalQuota(c *gin.Context) {
+	total, err := model.GetUserTotalQuota()
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{"total_quota": total})
+	return
+}
+
+// GetUserConsumptionRank returns the boss-facing user contribution board.
+func GetUserConsumptionRank(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.Query("limit"))
+	if limit <= 0 {
+		limit = 100
+	}
+	days, _ := strconv.Atoi(c.Query("days"))
+	if days <= 0 {
+		days = 7
+	}
+	recentSince := time.Now().AddDate(0, 0, -days).Unix()
+	ranks, err := model.GetUserConsumptionRank(recentSince, limit)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{"items": ranks, "days": days})
 	return
 }
 

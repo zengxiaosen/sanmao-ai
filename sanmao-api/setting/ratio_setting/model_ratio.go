@@ -585,6 +585,10 @@ func getHardcodedCompletionModelRatio(name string) (float64, bool) {
 				}
 				return 6, true
 			}
+			// gpt-5.5 / gpt-5.6 系官方输出/输入 = 30/5 = 6（勿用 codex 系的 8）
+			if strings.HasPrefix(name, "gpt-5.5") || strings.HasPrefix(name, "gpt-5.6") {
+				return 6, true
+			}
 			return 8, true
 		}
 		// gpt-4.5-preview匹配

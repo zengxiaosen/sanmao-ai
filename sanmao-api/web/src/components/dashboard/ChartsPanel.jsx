@@ -78,11 +78,11 @@ const ChartsPanel = ({
             activeKey={activeChartTab}
             onChange={setActiveChartTab}
           >
-            <TabPane tab={<span>{t('收入分布')}</span>} itemKey='1' />
-            <TabPane tab={<span>{t('收入趋势')}</span>} itemKey='2' />
+            <TabPane tab={<span>{t('消费分布')}</span>} itemKey='1' />
+            <TabPane tab={<span>{t('消费趋势')}</span>} itemKey='2' />
             <TabPane tab={<span>{t('调用次数分布')}</span>} itemKey='3' />
             <TabPane tab={<span>{t('调用次数排行')}</span>} itemKey='4' />
-            <TabPane tab={<span>{t('渠道分析')}</span>} itemKey='5' />
+            <TabPane tab={<span>{t('调用来源')}</span>} itemKey='5' />
           </Tabs>
         </div>
       }

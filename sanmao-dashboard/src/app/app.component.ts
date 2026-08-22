@@ -1,34 +1,34 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, OnInit, inject } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { RouterOutlet, RouterLink, RouterLinkActive } from "@angular/router";
 
-import { ApiService } from './core/api.service';
-import { Health } from './core/models';
+import { ApiService } from "./core/api.service";
+import { Health } from "./core/models";
 
-// App 外壳：顶部导航栏 + 内容区。
-// 顶部显示当前研究的标的（从 /health 拿），下面是可切换的三个页面。
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="topbar">
       <div class="brand">
         📈 三毛量化投研看板
-        <span class="asset" *ngIf="health">· {{ health.symbols.join(', ') }}</span>
+        <span class="asset" *ngIf="health">· {{ health.symbols.join(", ") }}</span>
       </div>
       <nav>
         <a routerLink="/signals" routerLinkActive="active">📌 今日信号</a>
         <a routerLink="/performance" routerLinkActive="active">💰 回测绩效</a>
+        <a routerLink="/model-comparison" routerLinkActive="active">🔬 模型对比</a>
         <a routerLink="/factors" routerLinkActive="active">🧩 因子库</a>
         <a routerLink="/factor-health" routerLinkActive="active">🩺 因子体检</a>
         <a routerLink="/regime" routerLinkActive="active">🌦️ 市场状态</a>
       </nav>
       <div class="status" [class.ok]="health" [class.down]="!health">
-        {{ health ? '后端已连接' : '后端未连接' }}
+        {{ health ? "后端已连接" : "后端未连接" }}
       </div>
     </header>
     <main><router-outlet></router-outlet></main>
+    <footer class="disclaim">数据来源：腾讯行情 · 美联储 FRED · SEC EDGAR。本站内容为量化研究展示，仅供参考，不构成投资建议。</footer>
   `,
   styles: [`
     :host { display:block; font-family: -apple-system, "Segoe UI", "PingFang SC", sans-serif; color:#1f2937; }
@@ -44,6 +44,7 @@ import { Health } from './core/models';
     .status.ok { background:#052e16; color:#4ade80; }
     .status.down { background:#450a0a; color:#f87171; }
     main { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+    .disclaim { text-align:center; color:#9ca3af; font-size:12px; padding: 18px 0 26px; }
   `],
 })
 export class AppComponent implements OnInit {

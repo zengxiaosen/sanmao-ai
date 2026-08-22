@@ -1,0 +1,1 @@
+import{u as t,j as r}from"./index-DVZejV3f.js";import{D as s}from"./index-gAcuJVEM.js";import"./IllustrationConstruction-DkCDkcNA.js";const m=()=>{const{t:e}=t();return r.jsx(s,{apiEndpoint:"/api/user-agreement",title:e("用户协议"),cacheKey:"user_agreement",emptyMessage:e("加载用户协议内容失败...")})};export{m as default};

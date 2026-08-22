@@ -1,0 +1,128 @@
+/*
+Copyright (C) 2025 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+
+import react from '@vitejs/plugin-react';
+import { defineConfig, transformWithEsbuild } from 'vite';
+import pkg from '@douyinfe/vite-plugin-semi';
+import path from 'path';
+import { codeInspectorPlugin } from 'code-inspector-plugin';
+const { vitePluginSemi } = pkg;
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@douyinfe/semi-ui/dist/css/semi.css': path.resolve(
+        __dirname,
+        'node_modules/@douyinfe/semi-ui/dist/css/semi.css',
+      ),
+    },
+  },
+  plugins: [
+    codeInspectorPlugin({
+      bundler: 'vite',
+    }),
+    {
+      name: 'treat-js-files-as-jsx',
+      async transform(code, id) {
+        if (!/src\/.*\.js$/.test(id)) {
+          return null;
+        }
+
+        // Use the exposed transform from vite, instead of directly
+        // transforming with esbuild
+        return transformWithEsbuild(code, id, {
+          loader: 'jsx',
+          jsx: 'automatic',
+        });
+      },
+    },
+    react(),
+    vitePluginSemi({
+      cssLayer: true,
+    }),
+  ],
+  optimizeDeps: {
+    force: true,
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+        '.json': 'json',
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // 核心框架
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) {
+            return 'react-core';
+          }
+          // Semi UI
+          if (id.includes('@douyinfe/semi')) {
+            return 'semi-ui';
+          }
+          // 图表库（按需加载）
+          if (id.includes('mermaid') || id.includes('cytoscape')) {
+            return 'charts';
+          }
+          if (id.includes('echarts')) {
+            return 'echarts';
+          }
+          // 工具库
+          if (id.includes('node_modules/axios') || id.includes('node_modules/marked') || id.includes('node_modules/history')) {
+            return 'tools';
+          }
+          // 国际化
+          if (id.includes('i18next')) {
+            return 'i18n';
+          }
+          // React 组件库
+          if (id.includes('react-dropzone') || id.includes('react-fireworks') || id.includes('react-telegram') || id.includes('react-toastify') || id.includes('react-turnstile')) {
+            return 'react-components';
+          }
+          // 其他 node_modules 统一打包
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
+  server: {
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/mj': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/pg': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
+});

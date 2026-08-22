@@ -92,29 +92,6 @@ const ChannelsPage = () => {
           style={{ marginBottom: 12 }}
         />
       ) : null}
-      <div className='mb-5 rounded-3xl border border-semi-color-border bg-semi-color-bg-1 px-6 py-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)] dark:border-white/8 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.90),rgba(17,24,39,0.94))] dark:shadow-[0_18px_60px_rgba(2,6,23,0.20)]'>
-        <div className='inline-flex items-center rounded-full border border-semi-color-primary-light-default bg-semi-color-primary-light-default px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-semi-color-primary dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300'>
-          Sanmao Routing
-        </div>
-        <h1 className='mt-4 text-3xl font-semibold tracking-tight text-semi-color-text-0 dark:text-white'>
-          渠道路由与供应稳定性
-        </h1>
-        <p className='mt-3 max-w-3xl text-sm leading-7 text-semi-color-text-1 dark:text-slate-300'>
-          当前默认结构是 `vision-codex` + `vision-claude` 主路、`yxai-claude`
-          备路，Gemini 已禁用。这里是你判断渠道稳定性、优先级、消耗和备用策略是否合理的核心工作台。
-        </p>
-        <div className='mt-4 flex flex-wrap gap-3 text-xs text-semi-color-text-1 dark:text-slate-300'>
-          <span className='rounded-full border border-semi-color-border bg-semi-color-fill-0 px-3 py-1.5 dark:border-white/10 dark:bg-white/5'>
-            Claude 主路: vision-claude
-          </span>
-          <span className='rounded-full border border-semi-color-border bg-semi-color-fill-0 px-3 py-1.5 dark:border-white/10 dark:bg-white/5'>
-            Claude 备路: yxai-claude
-          </span>
-          <span className='rounded-full border border-semi-color-warning-light-default bg-semi-color-warning-light-default px-3 py-1.5 text-semi-color-warning dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200'>
-            Gemini: disabled
-          </span>
-        </div>
-      </div>
       <CardPro
         type='type3'
         tabsArea={<ChannelsTabs {...channelsData} />}

@@ -127,7 +127,7 @@ export const useDashboardCharts = (
     },
     title: {
       visible: true,
-      text: t('模型收入分布'),
+      text: t('模型消费分布'),
       subtext: `${t('总计')}：${renderQuota(0, 2)}`,
     },
     bar: {
@@ -202,7 +202,7 @@ export const useDashboardCharts = (
     },
     title: {
       visible: true,
-      text: t('模型收入趋势'),
+      text: t('模型消费趋势'),
       subtext: '',
     },
     tooltip: {

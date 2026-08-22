@@ -47,9 +47,10 @@ const getSystemTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [theme, _setTheme] = useState(() => {
     try {
-      return localStorage.getItem('theme-mode') || 'auto';
+      // 默认深色（参照 visioncoder），用户切换后走 localStorage
+      return localStorage.getItem('theme-mode') || 'dark';
     } catch {
-      return 'auto';
+      return 'dark';
     }
   });
 

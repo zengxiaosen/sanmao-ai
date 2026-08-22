@@ -881,3 +881,32 @@ func DeleteOldLog(ctx context.Context, targetTimestamp int64, limit int) (int64,
 
 	return total, nil
 }
+
+
+// UserConsumptionRank is one row of the boss "user contribution board".
+type UserConsumptionRank struct {
+	Username    string `json:"username" gorm:"column:username"`
+	TotalQuota  int64  `json:"total_quota" gorm:"column:total_quota"`
+	RecentQuota int64  `json:"recent_quota" gorm:"column:recent_quota"`
+	Count       int64  `json:"count" gorm:"column:count"`
+}
+
+// GetUserConsumptionRank aggregates consume logs by username.
+// recentSince: unix ts for the "recent window" (e.g. 7 days ago); rows ordered by total desc.
+func GetUserConsumptionRank(recentSince int64, limit int) (ranks []UserConsumptionRank, err error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	err = LOG_DB.Table("logs").
+		Select("username, "+
+			"coalesce(sum(quota),0) total_quota, "+
+			"coalesce(sum(case when created_at >= ? then quota else 0 end),0) recent_quota, "+
+			"count(*) count", recentSince).
+		Where("type = ?", LogTypeConsume).
+		Where("username <> ''").
+		Group("username").
+		Order("total_quota desc").
+		Limit(limit).
+		Scan(&ranks).Error
+	return ranks, err
+}

@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 
 import React from 'react';
+import { isAdmin } from '../../helpers';
 import { Button } from '@douyinfe/semi-ui';
 import { RefreshCw, Search } from 'lucide-react';
 
@@ -64,7 +65,9 @@ const DashboardHeader = ({
             className='mt-2 max-w-2xl text-sm'
             style={{ color: 'var(--semi-color-text-1)' }}
           >
-            {t('这里是统一中转运营台：查看消耗、监控渠道、管理额度，并持续验证你的转发链路是否稳定且可盈利。')}
+            {isAdmin()
+              ? t('这里是统一中转运营台：查看消耗、监控渠道、管理额度，掌握经营状况。')
+              : t('在这里查看你的用量、消费与剩余额度，管理你的 API 密钥。')}
           </p>
         </div>
         <div className='flex gap-3 self-start'>

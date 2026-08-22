@@ -11,6 +11,8 @@ import (
 
 func setupChannelUsageStatsTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
+	previousDB, previousLogDB := DB, LOG_DB
+	previousUsingSQLite, previousUsingMySQL, previousUsingPostgreSQL := common.UsingSQLite, common.UsingMySQL, common.UsingPostgreSQL
 
 	common.UsingSQLite = true
 	common.UsingMySQL = false
@@ -28,10 +30,10 @@ func setupChannelUsageStatsTestDB(t *testing.T) *gorm.DB {
 	}
 
 	t.Cleanup(func() {
-		sqlDB, err := db.DB()
-		if err == nil {
-			_ = sqlDB.Close()
-		}
+		DB, LOG_DB = previousDB, previousLogDB
+		common.UsingSQLite = previousUsingSQLite
+		common.UsingMySQL = previousUsingMySQL
+		common.UsingPostgreSQL = previousUsingPostgreSQL
 	})
 
 	return db

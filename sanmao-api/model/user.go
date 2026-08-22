@@ -800,6 +800,12 @@ func GetUserUsedQuota(id int) (quota int, err error) {
 	return quota, err
 }
 
+// GetUserTotalQuota returns the sum of remaining quota across all users (the prepaid pool).
+func GetUserTotalQuota() (total int64, err error) {
+	err = DB.Model(&User{}).Select("COALESCE(SUM(quota),0)").Scan(&total).Error
+	return total, err
+}
+
 func GetUserEmail(id int) (email string, err error) {
 	err = DB.Model(&User{}).Where("id = ?", id).Select("email").Find(&email).Error
 	return email, err

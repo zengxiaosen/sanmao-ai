@@ -20,6 +20,30 @@
   --sidebar-current-width: var(--sidebar-width);
 }
 
+/* ==================== 全局主色：暖橙（参照 visioncoder，覆盖 Semi 默认蓝）
+   Semi 把 --semi-color-primary 直接定义在 body / body[theme-mode="dark"] 上，
+   所以必须用同样的 body 选择器覆盖（:root/html 是祖先，会被 body 自身定义压过）。
+   本块未分层，级联中永远胜出 @layer semi。 ==================== */
+body,
+body[theme-mode='dark'] .semi-always-light {
+  --semi-color-primary: #b45309;
+  --semi-color-primary-hover: #92400e;
+  --semi-color-primary-active: #78350f;
+  --semi-color-primary-light-default: rgba(245, 158, 11, 0.08);
+  --semi-color-primary-light-hover: rgba(245, 158, 11, 0.15);
+  --semi-color-primary-light-active: rgba(245, 158, 11, 0.22);
+}
+
+body[theme-mode='dark'],
+body .semi-always-dark {
+  --semi-color-primary: #fbbf24;
+  --semi-color-primary-hover: #f59e0b;
+  --semi-color-primary-active: #d97706;
+  --semi-color-primary-light-default: rgba(251, 191, 36, 0.14);
+  --semi-color-primary-light-hover: rgba(251, 191, 36, 0.22);
+  --semi-color-primary-light-active: rgba(251, 191, 36, 0.3);
+}
+
 body.sidebar-collapsed {
   --sidebar-current-width: var(--sidebar-width-collapsed);
 }

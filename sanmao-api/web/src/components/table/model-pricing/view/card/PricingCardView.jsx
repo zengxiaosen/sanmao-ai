@@ -258,7 +258,7 @@ const PricingCardView = ({
               onClick={() => openModelDetail && openModelDetail(model)}
             >
               <div className='-mx-6 -mt-6 mb-4 rounded-t-2xl border-b border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.92),rgba(30,41,59,0.86))] px-6 py-4 text-white'>
-                <div className='inline-flex items-center rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-200'>
+                <div className='inline-flex items-center rounded-full border border-amber-300/20 bg-amber-300/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200'>
                   Sanmao Market
                 </div>
                 <div className='mt-3 text-xs text-slate-300'>

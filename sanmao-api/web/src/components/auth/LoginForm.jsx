@@ -511,7 +511,7 @@ const LoginForm = () => {
                 {systemName}
               </Title>
             </div>
-            <div className='inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-500 dark:text-emerald-300'>
+            <div className='inline-flex items-center rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-500 dark:text-amber-600'>
               Console
             </div>
             <Text className='!text-semi-color-text-2'>
@@ -657,7 +657,7 @@ const LoginForm = () => {
                 <Button
                   theme='solid'
                   type='primary'
-                  className='w-full h-12 flex items-center justify-center bg-black text-white !rounded-full hover:bg-gray-800 transition-colors'
+                  className='w-full h-12 flex items-center justify-center bg-black text-gray-800 !rounded-full hover:bg-gray-800 transition-colors'
                   icon={<IconMail size='large' />}
                   onClick={handleEmailLoginClick}
                   loading={emailLoginLoading}
@@ -735,7 +735,7 @@ const LoginForm = () => {
                 {systemName}
               </Title>
             </div>
-            <div className='inline-flex items-center rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-500 dark:text-emerald-300'>
+            <div className='inline-flex items-center rounded-full border border-amber-400/25 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-500 dark:text-amber-600'>
               Console
             </div>
             <Text className='!text-semi-color-text-2'>
@@ -964,35 +964,97 @@ const LoginForm = () => {
     );
   };
 
-  return (
-    <div className='relative overflow-hidden bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8'>
-      {/* 背景模糊晕染球 */}
-      <div
-        className='blur-ball blur-ball-indigo'
-        style={{ top: '-80px', right: '-80px', transform: 'none' }}
-      />
-      <div
-        className='blur-ball blur-ball-teal'
-        style={{ top: '50%', left: '-120px' }}
-      />
-      <div className='w-full max-w-sm mt-[60px]'>
-        {showEmailLogin ||
-        !hasOAuthLoginOptions
-          ? renderEmailLoginForm()
-          : renderOAuthOptions()}
-        {renderWeChatLoginModal()}
-        {render2FAModal()}
+  const marketingSteps = [
+    {
+      title: t('创建 API 密钥'),
+      desc: t('一把 key 直连 Claude 与 Codex，接口全兼容'),
+    },
+    {
+      title: t('查看模型广场'),
+      desc: t('实付价与官方价一目了然，按量计费透明'),
+    },
+    {
+      title: t('充值即用'),
+      desc: t('余额随时可查，稳定转发不折腾'),
+    },
+  ];
 
-        {turnstileEnabled && (
-          <div className='flex justify-center mt-6'>
-            <Turnstile
-              sitekey={turnstileSiteKey}
-              onVerify={(token) => {
-                setTurnstileToken(token);
-              }}
-            />
+  return (
+    <div className='min-h-screen w-full grid grid-cols-1 lg:grid-cols-2'>
+      {/* 左：营销区（窄屏隐藏） */}
+      <div className='relative hidden lg:flex flex-col justify-between overflow-hidden px-14 py-12 bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200'>
+        <div
+          className='pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-amber-400/30 blur-3xl'
+          aria-hidden='true'
+        />
+        <div
+          className='pointer-events-none absolute bottom-[-60px] left-[-40px] h-56 w-56 rounded-full bg-amber-500/20 blur-3xl'
+          aria-hidden='true'
+        />
+
+        <div className='relative flex items-center gap-3'>
+          <img src={logo} alt={systemName} className='h-9 w-9 rounded-lg object-contain' />
+          <span className='text-lg font-semibold tracking-wide text-gray-900'>
+            {systemName}
+          </span>
+        </div>
+
+        <div className='relative max-w-md'>
+          <div className='inline-flex items-center rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-600 mb-7'>
+            SANMAO
           </div>
-        )}
+          <h1 className='text-4xl xl:text-5xl font-bold leading-[1.15] text-gray-800 mb-5'>
+            {t('接入一次，随便换')}
+          </h1>
+          <p className='text-base text-gray-800/55 leading-relaxed mb-10'>
+            {t('专注 Claude 与 Codex 的稳定转发，接口全兼容、充值即用、按量计费。')}
+          </p>
+
+          <div className='space-y-4'>
+            {marketingSteps.map((step, idx) => (
+              <div
+                key={idx}
+                className='flex items-start gap-4 rounded-2xl border border-gray-300 bg-white px-5 py-4 backdrop-blur-sm'
+              >
+                <div className='flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-amber-400/40 bg-amber-400/10 text-sm font-semibold text-amber-600'>
+                  {idx + 1}
+                </div>
+                <div>
+                  <div className='text-[15px] font-medium text-gray-900'>
+                    {step.title}
+                  </div>
+                  <div className='mt-0.5 text-sm text-gray-800/45'>{step.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className='relative text-xs text-gray-800/30'>
+          © {new Date().getFullYear()} {systemName}
+        </div>
+      </div>
+
+      {/* 右：登录区 */}
+      <div className='relative flex items-center justify-center px-6 py-12 bg-semi-color-bg-0'>
+        <div className='w-full max-w-md'>
+          {showEmailLogin || !hasOAuthLoginOptions
+            ? renderEmailLoginForm()
+            : renderOAuthOptions()}
+          {renderWeChatLoginModal()}
+          {render2FAModal()}
+
+          {turnstileEnabled && (
+            <div className='flex justify-center mt-6'>
+              <Turnstile
+                sitekey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                }}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

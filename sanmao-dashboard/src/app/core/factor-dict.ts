@@ -21,7 +21,7 @@ export const FACTOR_DICT: Record<string, FactorInfo> = {
   volume_z_20d:{ group: '量价', name: '异常成交量', meaning: '今天的成交量比平时反常多少（放量=有事发生）', calc: '(今量 − 20日均量) ÷ 20日量标准差' },
 
   // ===== 舆情（看这家公司的公告/新闻，来源：SEC 官方公告）=====
-  llm_news_count:         { group: '舆情', name: '当日公告数',   meaning: '今天这家公司发了几条公告/新闻', calc: '当日 SEC 公告条数（8-K 重大事件 / 10-Q 季报 / 10-K 年报）' },
+  llm_news_count:         { group: '舆情', name: '当日公告数',   meaning: '公司当天发布了几条官方公告', calc: '统计当日 SEC EDGAR（美国证监会官方信息披露库）里该公司的公告条数：8-K 重大事件 / 10-Q 季报 / 10-K 年报' },
   llm_mean_sentiment:     { group: '舆情', name: '平均情绪',     meaning: '今天的公告整体偏利好还是利空（−1 最空，+1 最多）', calc: '每条公告文本打情绪分后取平均' },
   llm_weighted_sentiment: { group: '舆情', name: '加权情绪',     meaning: '同上，但「越有把握的判断权重越大」', calc: '情绪分 × 置信度 后取平均' },
   llm_max_confidence:     { group: '舆情', name: '最高置信度',   meaning: '今天最有把握的一条判断有多确定', calc: '当日各条置信度的最大值' },

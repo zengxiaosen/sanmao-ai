@@ -22,26 +22,33 @@ import { DecayRow, ReplacementRow } from '../../core/models';
   template: `
     <div class="page">
       <h2>因子体检</h2>
-      <p class="sub">模型不是黑盒：这页告诉你它当前最依赖什么因子、哪些因子正在失灵、失灵了拿什么替换。</p>
+      <p class="sub">这页展示模型当前最依赖哪些因子、哪些因子正在失灵、失灵后用什么替换。</p>
 
-      <app-explain title="「因子体检」的三个判断是怎么做出来的？">
-        对每个因子做两项检查，像体检的两个化验指标：<br>
-        <b>1. 模型还看重它吗？</b>每个训练窗口结束后，读出模型内部给每个因子的权重
-        （<span class="formula">feature importance，全部因子合计=1</span>）。
-        把窗口按时间排开，就能看到权重的走势——持续下行说明模型在「冷落」它。<br>
-        <b>2. 它和涨跌还有关系吗？</b>用最近 60 天数据做回归：因子高的日子，之后是不是真的更容易涨？
-        关系的可信度用统计学的 <span class="formula">|t| 值</span> 衡量（大于 2 算很可信，小于 1 基本是噪声）。<br><br>
-        两项结合定状态：<b>健康</b>（关系可信）→ <b>衰退中</b>（权重下滑或可信度走低）→
-        <b>已失效</b>（权重大幅下滑且关系消失）。<br>
-        <b>数据稀疏</b>是诚实声明：公告类因子一年只有十几个非零样本，统计上判断不了好坏，
-        我们直接说「判断不了」，而不是硬给结论。
+      <app-explain title="「模型权重」「体检结论」是怎么算出来的？">
+        <b>什么是「模型给因子的权重」？</b>预测模型是几百棵决策树的投票组合，训练完成后可以统计出：
+        做判断时每个因子被用到的贡献占比，全部因子加起来 = 100%。
+        比如「当日公告数」权重 7.9%，意思是模型的判断里约 7.9% 的贡献来自这个因子——
+        权重高 = 模型当前最信赖它。<br><br>
+        <b>权重会变吗？怎么变？</b>会。模型每个季度用「最近三年」的数据重新训练一次，
+        市场风格变了，重训后的权重就会跟着变。下面的曲线图就是把历年每次重训的权重连起来：
+        2022 年加息期，利率类因子的权重明显抬升；2023 年 AI 行情启动后，动量类因子权重上行。
+        <b>曲线持续下行 = 模型正在冷落这个因子</b>，这就是「因子衰退」的第一个信号。<br><br>
+        <b>第二个信号：它和涨跌还有关系吗？</b>用最近 60 个交易日做回归——
+        每天记下（因子值 x，次日涨跌 y），拟合直线 <span class="formula">y ≈ α + β·x</span>，
+        再算斜率的可信度 <span class="formula">|t| = β ÷ β的估计误差</span>。
+        举例：|t| = 2.1 表示这个关系大概率是真的；|t| = 0.4 表示散点乱成一团，关系基本是巧合。<br><br>
+        <b>体检结论规则（两个信号同时看）：</b><br>
+        · 权重下滑超 2 个百分点 <b>且</b> |t| &lt; 0.6 → <b>已失效</b><br>
+        · 权重下滑超 1 个百分点 <b>且</b> |t| &lt; 1.0 → <b>衰退中</b><br>
+        · 其余 → <b>健康</b><br>
+        · 公告类因子一年只有十几个非零样本，回归结果没有统计意义 → 标为<b>样本不足</b>，不评级。
       </app-explain>
 
       <div class="chips" *ngIf="ready">
         <span class="chip ok">健康 {{ counts.active }}</span>
         <span class="chip warn">衰退中 {{ counts.decaying }}</span>
         <span class="chip bad">已失效 {{ counts.failed }}</span>
-        <span class="chip na" *ngIf="counts.sparse">数据稀疏（不判定）{{ counts.sparse }}</span>
+        <span class="chip na" *ngIf="counts.sparse">样本不足（不评级）{{ counts.sparse }}</span>
       </div>
 
       <h3>模型的「注意力」怎么变：因子重要性走势（前 6 名）</h3>
@@ -50,7 +57,7 @@ import { DecayRow, ReplacementRow } from '../../core/models';
       <h3>逐因子体检报告</h3>
       <table class="tbl" *ngIf="ready">
         <thead>
-          <tr><th style="width:150px">因子</th><th style="width:110px">体检结果</th><th>判断依据（人话）</th></tr>
+          <tr><th style="width:150px">因子</th><th style="width:110px">体检结果</th><th>判断依据</th></tr>
         </thead>
         <tbody>
           <tr *ngFor="let row of decay">
@@ -62,11 +69,19 @@ import { DecayRow, ReplacementRow } from '../../core/models';
       </table>
 
       <ng-container *ngIf="replacements.length">
-        <h3>自动替换建议（自适应因子系统的核心动作）</h3>
+        <h3>自动替换建议</h3>
+        <app-explain title="「同类」指什么？为什么只在同类里替换？">
+          22 个因子分三大类，替换只在同一类内进行，保证换上去的因子和换下来的看的是同一类信息：<br>
+          · <b>量价类</b>（8 个）：1日涨幅、5日涨幅、20日涨幅、20日波动率、偏离10日均线、偏离50日均线、日内振幅、异常成交量<br>
+          · <b>舆情类</b>（9 个）：当日公告数、公告平均情绪、公告加权情绪、公告最高置信度、财报事件数、宏观事件数、利润承压信号、指引疲软信号、供应链风险信号<br>
+          · <b>宏观类</b>（5 个）：VIX恐慌指数、VIX 5日变化、10年美债利率、利率5日变化、美元5日变化<br><br>
+          规则：某因子被判「衰退/失效」时，从它的同类中选当前权重最高的健康因子作为替代。
+          若同类中暂时没有健康因子（例如宏观类 5 个全在衰退），则显示「暂无健康同类」，等待下次重训再评估。
+        </app-explain>
         <div class="rep" *ngFor="let rep of replacements">
           <span class="bad-text">{{ nameOf(rep.failed_factor) }}</span> 正在走弱
           → 建议改用同类里最健康的 <span class="ok-text">{{ rep.replacement ? nameOf(rep.replacement) : '（暂无健康同类）' }}</span>
-          <span class="grp">（{{ rep.group === 'price_volume' ? '量价类' : rep.group === 'sentiment' ? '舆情类' : rep.group === 'macro' ? '宏观类' : rep.group }}内替换，逻辑可解释）</span>
+          <span class="grp">（{{ groupCn(rep.group) }}内替换）</span>
         </div>
       </ng-container>
 
@@ -112,14 +127,18 @@ export class FactorHealthComponent implements OnInit {
 
   nameOf(key: string): string { return factorInfo(key).name; }
 
+  groupCn(group: string): string {
+    return ({ price_volume: '量价类', sentiment: '舆情类', macro: '宏观类' } as any)[group] ?? group;
+  }
+
   statusLabel(status: string): string {
-    return ({ active: '✅ 健康', decaying: '⚠️ 衰退中', failed: '❌ 已失效', sparse: 'ℹ️ 数据稀疏' } as any)[status] ?? status;
+    return ({ active: '✅ 健康', decaying: '⚠️ 衰退中', failed: '❌ 已失效', sparse: 'ℹ️ 样本不足' } as any)[status] ?? status;
   }
 
   whyOf(row: DecayRow & { coverage?: number }): string {
     const cov = (row as any).coverage;
     if (row.status === 'sparse') {
-      return `只有 ${((cov ?? 0) * 100).toFixed(1)}% 的日子有非零取值（公告不是天天有），样本太少，统计上无法判断有效性——不下结论。`;
+      return `该因子来自公司公告，而公告不是每天都有：只有 ${((cov ?? 0) * 100).toFixed(1)}% 的交易日有非零取值，样本量不足以做统计判断，故不评级。`;
     }
     const t = row.recent_abs_t;
     const tText = t >= 2 ? `和涨跌的关系很可信（|t|=${t.toFixed(1)}）`

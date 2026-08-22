@@ -1,7 +1,5 @@
 import { Routes } from '@angular/router';
 
-// 路由表 = 「哪个网址显示哪个页面」。
-// 默认打开就跳到因子库。
 export const routes: Routes = [
   { path: '', redirectTo: 'signals', pathMatch: 'full' },
   {
@@ -28,5 +26,10 @@ export const routes: Routes = [
     path: 'regime',
     loadComponent: () =>
       import('./pages/regime-review/regime-review.component').then((m) => m.RegimeReviewComponent),
+  },
+  {
+    path: 'model-comparison',
+    loadComponent: () =>
+      import('./pages/model-comparison/model-comparison.component').then((m) => m.ModelComparisonComponent),
   },
 ];

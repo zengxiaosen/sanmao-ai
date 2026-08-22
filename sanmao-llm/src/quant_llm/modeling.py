@@ -14,24 +14,35 @@ class WalkForwardConfig:
     min_train_rows: int
 
 
-def make_classifier(model_config: dict):
+def make_classifier(model_config: dict, use_ensemble: bool = False):
+    # 如果需要集成模型
+    if use_ensemble:
+        try:
+            from quant_llm.ensemble import make_ensemble_classifier
+            return make_ensemble_classifier(model_config)
+        except ImportError:
+            print("Warning: ensemble module not available, falling back to single model")
+    
     kind = model_config.get("kind", "xgboost")
     if kind == "xgboost":
         try:
-            from xgboost import XGBClassifier
+            from lightgbm import LGBMClassifier
 
-            return XGBClassifier(
+            return LGBMClassifier(
                 # Conservative baseline values: enough trees to learn, shallow depth to reduce overfit.
                 n_estimators=model_config.get("n_estimators", 200),
-                max_depth=model_config.get("max_depth", 3),
+                num_leaves=model_config.get("num_leaves", 31),
                 # Low learning rate makes each tree a small correction instead of a large jump.
                 learning_rate=model_config.get("learning_rate", 0.05),
                 # Row/column sampling adds randomness and reduces dependence on one period or one feature.
                 subsample=model_config.get("subsample", 0.8),
                 colsample_bytree=model_config.get("colsample_bytree", 0.8),
                 # logloss evaluates probability quality, not just hard up/down accuracy.
-                eval_metric="logloss",
-                tree_method="hist",
+                objective="binary",
+                metric="binary_logloss",
+                min_child_samples=20,
+                subsample_freq=1,
+                verbosity=-1,
                 # Fixed seed makes experiments reproducible.
                 random_state=42,
             )

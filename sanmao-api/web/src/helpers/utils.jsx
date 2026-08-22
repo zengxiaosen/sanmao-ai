@@ -26,6 +26,7 @@ import {
   MESSAGE_ROLES,
 } from '../constants/playground.constants';
 import { TABLE_COMPACT_MODES_KEY } from '../constants';
+import { OFFICIAL_PRICES } from '../constants/officialPrices';
 import { MOBILE_BREAKPOINT } from '../hooks/common/useIsMobile';
 
 const HTMLToastContent = ({ htmlContent }) => {
@@ -48,7 +49,7 @@ export function isRoot() {
 
 export function getSystemName() {
   let system_name = localStorage.getItem('system_name');
-  if (!system_name) return 'New API';
+  if (!system_name) return 'Sanmao';
   return system_name;
 }
 
@@ -887,6 +888,38 @@ export const formatPriceInfo = (priceData, t, quotaDisplayType = 'USD') => {
       ))}
     </>
   );
+};
+
+// -------------------------------
+// 官方零售价查询 + 与实付一致的价格格式化（模型广场「实付 ‖ 官方」对比用）
+export const getOfficialPrice = (modelName) =>
+  (modelName && OFFICIAL_PRICES[modelName]) || null;
+
+export const formatTokenPriceUSD = (
+  priceUSD,
+  { displayPrice, currency = 'USD', tokenUnit = 'M', precision = 4 } = {},
+) => {
+  if (priceUSD === null || priceUSD === undefined) return null;
+  const num = Number(priceUSD);
+  if (!Number.isFinite(num)) return null;
+  const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+  let symbol = '$';
+  if (currency === 'CNY') {
+    symbol = '¥';
+  } else if (currency === 'CUSTOM') {
+    try {
+      const s = JSON.parse(localStorage.getItem('status') || '{}');
+      symbol = s?.custom_currency_symbol || '¤';
+    } catch (e) {
+      symbol = '¤';
+    }
+  }
+  const raw =
+    typeof displayPrice === 'function' ? displayPrice(num) : `$${num}`;
+  const numeric =
+    parseFloat(String(raw).replace(/[^0-9.]/g, '')) / unitDivisor;
+  if (!Number.isFinite(numeric)) return null;
+  return `${symbol}${numeric.toFixed(precision)}`;
 };
 
 // -------------------------------

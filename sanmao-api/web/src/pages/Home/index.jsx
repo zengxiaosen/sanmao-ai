@@ -41,26 +41,12 @@ import {
 import { Link } from 'react-router-dom';
 import NoticeModal from '../../components/layout/NoticeModal';
 import {
-  Moonshot,
   OpenAI,
-  XAI,
-  Zhipu,
-  Volcengine,
-  Cohere,
   Claude,
   Gemini,
-  Suno,
-  Minimax,
-  Wenxin,
-  Spark,
-  Qingyan,
   DeepSeek,
   Qwen,
-  Midjourney,
   Grok,
-  AzureAI,
-  Hunyuan,
-  Xinference,
 } from '@lobehub/icons';
 
 const { Text } = Typography;
@@ -157,41 +143,40 @@ const Home = () => {
       {homePageContentLoaded && homePageContent === '' ? (
         <div className='w-full overflow-x-hidden'>
           {/* Banner 部分 */}
-          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.12),transparent_24%)]'>
+          <div className='w-full border-b border-semi-color-border min-h-[500px] md:min-h-[600px] lg:min-h-[700px] relative overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(245, 158, 11,0.18),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(56,189,248,0.12),transparent_24%)]'>
             {/* 背景模糊晕染球 */}
             <div className='blur-ball blur-ball-indigo' />
             <div className='blur-ball blur-ball-teal' />
             <div className='flex items-center justify-center h-full px-4 py-20 md:py-24 lg:py-32 mt-10'>
               {/* 居中内容区 */}
               <div className='flex flex-col items-center justify-center text-center max-w-4xl mx-auto'>
-                <div className='mb-5 inline-flex items-center gap-3 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-300 shadow-[0_0_30px_rgba(16,185,129,0.12)]'>
-                  <span>Console</span>
-                  <span className='h-1 w-1 rounded-full bg-emerald-300/70' />
-                  <span>{t('模型中转与运营工作台')}</span>
+                <div className='mb-5 inline-flex items-center gap-3 rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-amber-300 shadow-[0_0_30px_rgba(245, 158, 11,0.12)]'>
+                  <span>SANMAO</span>
+                  <span className='h-1 w-1 rounded-full bg-amber-300/70' />
+                  <span>{t('API 转发服务')}</span>
                 </div>
                 <div className='flex flex-col items-center justify-center mb-6 md:mb-8'>
                   <div
                     className={`text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-semi-color-text-0 leading-tight ${isChinese ? 'tracking-wide md:tracking-wider' : ''}`}
                   >
-                    <div>{t('为 Claude 与 Codex 打造的')}</div>
                     <div className='mt-2'>
                       <span className='shine-text-home'>
-                        {t('高可用中转站')}
+                        {t('Claude & Codex API')}
                       </span>
                     </div>
                   </div>
                   <p className='text-base md:text-lg lg:text-xl text-semi-color-text-1 mt-4 md:mt-6 max-w-2xl leading-8'>
-                    {t('专注于 Claude、Codex 与高频调用场景的统一转发、额度控制、渠道切换与商业化运营。只需要把模型基址替换为：')}
+                    {t('稳定转发，兼容 OpenAI 接口，按量计费。替换 Base URL 即可使用：')}
                   </p>
                   <div className='mt-5 flex flex-wrap items-center justify-center gap-3 text-xs md:text-sm text-semi-color-text-2'>
                     <span className='rounded-full border border-white/10 bg-white/5 px-3 py-1.5'>
-                      Claude 主备切换
+                      Claude 全系列
                     </span>
                     <span className='rounded-full border border-white/10 bg-white/5 px-3 py-1.5'>
-                      Codex API 统一入口
+                      Codex / GPT 统一入口
                     </span>
                     <span className='rounded-full border border-white/10 bg-white/5 px-3 py-1.5'>
-                      额度与成本可视化
+                      按量计费 · 充值即用
                     </span>
                   </div>
                   {/* BASE URL 与端点选择 */}
@@ -274,66 +259,27 @@ const Home = () => {
                       type='tertiary'
                       className='text-lg md:text-xl lg:text-2xl font-light'
                     >
-                      {t('当前重点覆盖 Claude、Codex 与主流推理供应商')}
+                      {t('支持 Claude、GPT、Grok、Gemini 等模型')}
                     </Text>
                   </div>
                   <div className='flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-4'>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Moonshot size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
                       <OpenAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <XAI size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Zhipu.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Volcengine.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Cohere.Color size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
                       <Claude.Color size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Suno size={40} />
+                      <Gemini size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Minimax.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Wenxin.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Spark.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Qingyan.Color size={40} />
+                      <Grok size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
                       <DeepSeek.Color size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
                       <Qwen.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Midjourney size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Grok size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <AzureAI.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Hunyuan.Color size={40} />
-                    </div>
-                    <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
-                      <Xinference.Color size={40} />
                     </div>
                     <div className='w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center'>
                       <Typography.Text className='!text-lg sm:!text-xl md:!text-2xl lg:!text-3xl font-bold'>

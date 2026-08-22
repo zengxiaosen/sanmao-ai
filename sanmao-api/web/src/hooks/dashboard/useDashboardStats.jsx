@@ -65,7 +65,7 @@ export const useDashboardStats = (
             trendColor: '#10b981',
           },
           {
-            title: t('已消耗收入'),
+            title: t('已消耗额度'),
             value: renderQuota(quotaConsumed),
             hint: t('历史实际扣掉的钱'),
             icon: <IconHistogram />,
@@ -161,7 +161,7 @@ export const useDashboardStats = (
         color: 'bg-yellow-50',
         items: [
           {
-            title: t('已消耗收入'),
+            title: t('已消耗额度'),
             value: renderQuota(consumeQuota),
             icon: <IconCoinMoneyStroked />,
             avatarColor: 'yellow',

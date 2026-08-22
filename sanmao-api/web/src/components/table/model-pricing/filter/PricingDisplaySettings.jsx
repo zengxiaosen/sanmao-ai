@@ -51,6 +51,10 @@ const PricingDisplaySettings = ({
       label: t('显示倍率'),
     },
     {
+      value: 'groupedView',
+      label: t('分组视图'),
+    },
+    {
       value: 'tableView',
       label: t('表格视图'),
     },
@@ -74,6 +78,9 @@ const PricingDisplaySettings = ({
       case 'ratio':
         setShowRatio(!showRatio);
         break;
+      case 'groupedView':
+        setViewMode('grouped');
+        break;
       case 'tableView':
         setViewMode(viewMode === 'table' ? 'card' : 'table');
         break;
@@ -87,6 +94,7 @@ const PricingDisplaySettings = ({
     const activeValues = [];
     if (supportsCurrencyDisplay && showWithRecharge) activeValues.push('recharge');
     if (showRatio) activeValues.push('ratio');
+    if (viewMode === 'grouped') activeValues.push('groupedView');
     if (viewMode === 'table') activeValues.push('tableView');
     if (tokenUnit === 'K') activeValues.push('tokenUnit');
     return activeValues;

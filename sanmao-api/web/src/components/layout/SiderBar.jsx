@@ -36,6 +36,7 @@ const routerMap = {
   token: '/console/token',
   redemption: '/console/redemption',
   topup: '/console/topup',
+  redeem: '/console/redeem',
   user: '/console/user',
   subscription: '/console/subscription',
   log: '/console/log',
@@ -86,22 +87,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         itemKey: 'log',
         to: '/log',
       },
-      {
-        text: t('绘图日志'),
-        itemKey: 'midjourney',
-        to: '/midjourney',
-        className:
-          localStorage.getItem('enable_drawing') === 'true'
-            ? ''
-            : 'tableHiddle',
-      },
-      {
-        text: t('任务日志'),
-        itemKey: 'task',
-        to: '/task',
-        className:
-          localStorage.getItem('enable_task') === 'true' ? '' : 'tableHiddle',
-      },
     ];
 
     // 根据配置过滤项目
@@ -121,6 +106,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
 
   const financeItems = useMemo(() => {
     const items = [
+      {
+        text: t('兑换'),
+        itemKey: 'redeem',
+        to: '/redeem',
+      },
       {
         text: t('钱包管理'),
         itemKey: 'topup',
@@ -157,12 +147,6 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('模型管理'),
-        itemKey: 'models',
-        to: '/console/models',
-        className: isAdmin() ? '' : 'tableHiddle',
-      },
-      {
         text: t('兑换码管理'),
         itemKey: 'redemption',
         to: '/redemption',
@@ -192,13 +176,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
   }, [isAdmin(), isRoot(), t, isModuleVisible]);
 
   const chatMenuItems = useMemo(() => {
-    const items = [
-      {
-        text: t('操练场'),
-        itemKey: 'playground',
-        to: '/playground',
-      },
-    ];
+    const items = [];
 
     const filteredItems = items.filter((item) => {
       const configVisible = isModuleVisible('chat', item.itemKey);
@@ -328,17 +306,17 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         showAdmin={isAdmin()}
       >
         {!collapsed && (
-          <div className='mx-3 mb-3 rounded-2xl border border-emerald-400/15 bg-[linear-gradient(180deg,rgba(16,185,129,0.10),rgba(15,23,42,0.04))] px-3 py-3'>
+          <div className='mx-3 mb-3 rounded-2xl border border-amber-400/15 bg-[linear-gradient(180deg,rgba(245,158,11,0.10),rgba(15,23,42,0.04))] px-3 py-3'>
             <div className='flex items-center justify-between gap-2'>
               <div>
-                <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-400'>
+                <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-500'>
                   SANMAO
                 </div>
                 <div className='mt-1 text-sm font-semibold text-semi-color-text-0'>
                   Console
                 </div>
               </div>
-              <div className='rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300'>
+              <div className='rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-400'>
                 OPS
               </div>
             </div>
@@ -383,7 +361,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
           }}
         >
           {/* 聊天区域 */}
-          {hasSectionVisibleModules('chat') && (
+          {isAdmin() && hasSectionVisibleModules('chat') && (
             <div className='sidebar-section'>
               {chatMenuItems.map((item) => renderSubItem(item))}
             </div>

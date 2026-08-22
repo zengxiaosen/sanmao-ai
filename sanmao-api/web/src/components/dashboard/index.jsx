@@ -31,6 +31,7 @@ import FaqPanel from './FaqPanel';
 import UptimePanel from './UptimePanel';
 import SearchModal from './modals/SearchModal';
 import BusinessSummaryPanel from './BusinessSummaryPanel';
+import UserContributionBoard from './UserContributionBoard';
 
 import { useDashboardData } from '../../hooks/dashboard/useDashboardData';
 import { useDashboardStats } from '../../hooks/dashboard/useDashboardStats';
@@ -105,6 +106,7 @@ const Dashboard = () => {
       );
     });
     await dashboardData.loadBusinessStats();
+    await dashboardData.loadDashboardBigNumbers();
     await dashboardData.loadUptimeData();
   };
 
@@ -276,19 +278,18 @@ const Dashboard = () => {
       {dashboardData.canViewBusinessOps && (
         <BusinessSummaryPanel
           loading={dashboardData.loading}
-          consumeQuota={dashboardData.businessStats.quota}
-          consumeTokens={dashboardData.businessStats.tokens}
-          times={dashboardData.businessStats.count}
-          upstreamCostQuota={dashboardData.businessStats.upstreamCostQuota}
-          usageCostQuota={dashboardData.businessStats.usageCostQuota}
-          fixedCostQuota={dashboardData.businessStats.fixedCostQuota}
-          netProfitQuota={dashboardData.businessStats.netProfitQuota}
-          profitRate={dashboardData.businessStats.profitRate}
-          costConfigured={dashboardData.businessStats.costConfigured}
-          costConfiguredLogs={dashboardData.businessStats.costConfiguredLogs}
-          costUnconfiguredLogs={
-            dashboardData.businessStats.costUnconfiguredLogs
-          }
+          todayQuota={dashboardData.todayStats.quota}
+          monthQuota={dashboardData.monthStats.quota}
+          monthCount={dashboardData.monthStats.count}
+          totalBalance={dashboardData.totalBalance}
+          t={dashboardData.t}
+        />
+      )}
+
+      {dashboardData.canViewBusinessOps && (
+        <UserContributionBoard
+          loading={dashboardData.loading}
+          userRank={dashboardData.userRank}
           t={dashboardData.t}
         />
       )}

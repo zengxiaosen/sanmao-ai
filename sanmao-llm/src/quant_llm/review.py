@@ -94,12 +94,20 @@ def build_review(
 
 
 def _narrative(review: dict) -> list[str]:
-    """把结构化复盘翻译成几句人话（规则模板，非 LLM）。"""
+    """把结构化复盘翻译成给最终用户读的结论（规则模板生成）。
+
+    文案要求：因子一律用中文名（factor_names.cn）；不出现内部代码名、
+    不出现“AI/模板/小白”等元描述——这是对外产品页面。
+    """
+    from quant_llm.factor_names import cn
+
     lines: list[str] = []
 
     regime = review.get("regime", {})
     if regime:
-        lines.append(f"当前市场状态：{regime['latest']}（截至 {regime['latest_date']}）。")
+        # regime 值形如 "sideways 震荡"，对外只展示中文部分
+        latest = str(regime["latest"]).split(" ")[-1]
+        lines.append(f"当前市场状态：{latest}（截至 {regime['latest_date']}）。")
 
     backtest = review.get("backtest", {})
     if backtest:
@@ -110,7 +118,7 @@ def _narrative(review: dict) -> list[str]:
         if annual is not None:
             parts.append(f"年化收益 {annual * 100:.1f}%")
         if sharpe is not None:
-            parts.append(f"Sharpe {sharpe:.2f}")
+            parts.append(f"夏普比率 {sharpe:.2f}")
         if drawdown is not None:
             parts.append(f"最大回撤 {drawdown * 100:.1f}%")
         if parts:
@@ -118,31 +126,32 @@ def _narrative(review: dict) -> list[str]:
 
     top = review.get("top_factors", [])
     if top:
-        names = "、".join(t["factor"] for t in top[:3])
+        names = "、".join(cn(t["factor"]) for t in top[:3])
         lines.append(f"模型当前最依赖的因子：{names}。")
 
     health = review.get("factor_health", {})
     if health:
-        unhealthy = health.get("unhealthy_factors", [])
+        unhealthy = [cn(f) for f in health.get("unhealthy_factors", [])]
         sparse = health.get("sparse", 0)
-        sparse_text = f"，另有 {sparse} 个事件类因子数据稀疏暂不判定" if sparse else ""
+        sparse_text = f"，另有 {sparse} 个事件类因子近期无足够样本、暂不评级" if sparse else ""
         if unhealthy:
             lines.append(
                 f"因子体检：{health['active']} 个健康，"
                 f"{health['decaying']} 个衰退中，{health['failed']} 个已失效"
-                f"（关注：{'、'.join(unhealthy[:4])}）{sparse_text}。"
+                f"（重点关注：{'、'.join(unhealthy[:4])}）{sparse_text}。"
             )
         else:
-            lines.append(f"因子体检：全部 {health['active']} 个可判定因子状态健康{sparse_text}。")
+            lines.append(f"因子体检：{health['active']} 个参与评级的因子当前均为健康状态{sparse_text}。")
 
     for rep in review.get("replacements", [])[:3]:
-        lines.append(f"替换建议：{rep['failed_factor']} 走弱，可用同类的 {rep['replacement']} 顶上。")
+        lines.append(f"替换建议：「{cn(rep['failed_factor'])}」近期走弱，建议在同类因子中改用「{cn(rep['replacement'])}」。")
 
     signal = review.get("latest_signal", {})
     if signal:
-        action = signal.get("action", "")
+        action_raw = str(signal.get("action", ""))
+        action = "持有" if "long" in action_raw else "空仓观望"
         prob = signal.get("prob_up")
-        prob_text = f"（上涨概率 {prob:.2f}）" if isinstance(prob, (int, float)) else ""
+        prob_text = f"（模型判断次日上涨概率 {prob * 100:.0f}%）" if isinstance(prob, (int, float)) else ""
         lines.append(f"最新信号（{signal.get('date', '')}）：{action}{prob_text}。")
 
     return lines
@@ -173,10 +182,12 @@ def render_review_markdown(review: dict) -> str:
 
     top = review.get("top_factors", [])
     if top:
+        from quant_llm.factor_names import cn
+
         lines.append("## 模型当前最依赖的因子")
         lines.append("")
         for t in top:
-            lines.append(f"- {t['factor']}: importance {t['importance']:.3f}")
+            lines.append(f"- {cn(t['factor'])}：权重占比 {t['importance'] * 100:.1f}%")
         lines.append("")
 
     return "\n".join(lines)

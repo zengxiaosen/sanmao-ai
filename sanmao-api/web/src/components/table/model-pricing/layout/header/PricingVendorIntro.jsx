@@ -39,12 +39,12 @@ const CONFIG = {
 
 const THEME_COLORS = {
   allVendors: {
-    primary: '37 99 235',
-    background: 'rgba(59, 130, 246, 0.08)',
+    primary: '180 83 9',
+    background: 'rgba(180, 83, 9, 0.08)',
   },
   specific: {
-    primary: '16 185 129',
-    background: 'rgba(16, 185, 129, 0.1)',
+    primary: '217 119 6',
+    background: 'rgba(217, 119, 6, 0.1)',
   },
 };
 

@@ -26,6 +26,8 @@ import { TIME_OPTIONS } from '../../constants/dashboard.constants';
 import { useIsMobile } from '../common/useIsMobile';
 import { useMinimumLoadingTime } from '../common/useMinimumLoadingTime';
 
+const BUSINESS_OPS_USERS = ['zengxiaosen', '919451814@qq.com'];
+
 export const useDashboardData = (userState, userDispatch, statusState) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -75,6 +77,10 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     costConfiguredLogs: 0,
     costUnconfiguredLogs: 0,
   });
+  const [todayStats, setTodayStats] = useState({ quota: 0, count: 0 });
+  const [monthStats, setMonthStats] = useState({ quota: 0, count: 0 });
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [userRank, setUserRank] = useState([]);
   const [channelUsageWindow, setChannelUsageWindow] = useState('24h');
   const [selectedAnalysisModel, setSelectedAnalysisModel] = useState('');
   const [selectedAnalysisChannel, setSelectedAnalysisChannel] = useState('');
@@ -157,8 +163,12 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
   }, [t, userState?.user?.username]);
 
   const canViewBusinessOps = useMemo(() => {
-    return userState?.user?.username === 'zengxiaosen';
-  }, [userState?.user?.username]);
+    const u = userState?.user;
+    return (
+      BUSINESS_OPS_USERS.includes(u?.username) ||
+      BUSINESS_OPS_USERS.includes(u?.email)
+    );
+  }, [userState?.user?.username, userState?.user?.email]);
 
   // ========== 回调函数 ==========
   const handleInputChange = useCallback((value, name) => {
@@ -331,6 +341,56 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     return stats;
   }, [inputs, isAdminUser]);
 
+  const loadDashboardBigNumbers = useCallback(async () => {
+    if (!isAdminUser) return;
+    const nowDate = new Date();
+    const todayStart =
+      new Date(
+        nowDate.getFullYear(),
+        nowDate.getMonth(),
+        nowDate.getDate(),
+        0,
+        0,
+        0,
+      ).getTime() / 1000;
+    const monthStart =
+      new Date(nowDate.getFullYear(), nowDate.getMonth(), 1, 0, 0, 0).getTime() /
+      1000;
+    const endTs = Math.floor(nowDate.getTime() / 1000) + 3600;
+    const statUrl = (start) =>
+      `/api/log/stat?type=2&start_timestamp=${start}&end_timestamp=${endTs}`;
+    try {
+      const [todayRes, monthRes, balanceRes, rankRes] = await Promise.all([
+        API.get(statUrl(todayStart)),
+        API.get(statUrl(monthStart)),
+        API.get('/api/user/total_quota'),
+        API.get('/api/user/consumption_rank?days=7&limit=100'),
+      ]);
+      if (todayRes?.data?.success) {
+        const d = todayRes.data.data || {};
+        setTodayStats({
+          quota: Number(d.quota || 0),
+          count: Number(d.count || d.rpm || 0),
+        });
+      }
+      if (monthRes?.data?.success) {
+        const d = monthRes.data.data || {};
+        setMonthStats({
+          quota: Number(d.quota || 0),
+          count: Number(d.count || d.rpm || 0),
+        });
+      }
+      if (balanceRes?.data?.success) {
+        setTotalBalance(Number(balanceRes.data.data?.total_quota || 0));
+      }
+      if (rankRes?.data?.success) {
+        setUserRank(rankRes.data.data?.items || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAdminUser]);
+
   const getUserData = useCallback(async () => {
     let res = await API.get(`/api/user/self`);
     const { success, message, data } = res.data;
@@ -346,6 +406,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     const [channelData] = await Promise.all([
       loadChannelUsageData(),
       loadBusinessStats(),
+      loadDashboardBigNumbers(),
       loadUptimeData(),
     ]);
     return { quotaData: data, channelData };
@@ -354,6 +415,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     loadUptimeData,
     loadChannelUsageData,
     loadBusinessStats,
+    loadDashboardBigNumbers,
   ]);
 
   const handleSearchConfirm = useCallback(
@@ -414,6 +476,10 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     channelUsageData,
     channelModelUsageData,
     businessStats,
+    todayStats,
+    monthStats,
+    totalBalance,
+    userRank,
     channelUsageWindow,
     setChannelUsageWindow,
     channelAnalysisTopN,
@@ -458,6 +524,7 @@ export const useDashboardData = (userState, userDispatch, statusState) => {
     loadUptimeData,
     loadChannelUsageData,
     loadBusinessStats,
+    loadDashboardBigNumbers,
     getUserData,
     refresh,
     handleSearchConfirm,

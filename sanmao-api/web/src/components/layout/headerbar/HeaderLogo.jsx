@@ -49,7 +49,7 @@ const HeaderLogo = ({
           >
             <div className='flex flex-col leading-none'>
               <div className='flex items-center gap-2'>
-                <span className='inline-flex items-center rounded-full border border-emerald-400/35 bg-emerald-400/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.16)]'>
+                <span className='inline-flex items-center rounded-full border border-amber-400/35 bg-amber-400/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.16)]'>
                   Sanmao
                 </span>
               </div>

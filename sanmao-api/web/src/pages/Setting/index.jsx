@@ -25,28 +25,18 @@ import {
   Settings,
   Calculator,
   Gauge,
-  Shapes,
   Cog,
   MoreHorizontal,
   LayoutDashboard,
-  MessageSquare,
-  Palette,
-  CreditCard,
-  Activity,
 } from 'lucide-react';
 
-import SystemSetting from '../../components/settings/SystemSetting';
+
 import { isRoot } from '../../helpers';
 import OtherSetting from '../../components/settings/OtherSetting';
 import OperationSetting from '../../components/settings/OperationSetting';
 import RateLimitSetting from '../../components/settings/RateLimitSetting';
-import ModelSetting from '../../components/settings/ModelSetting';
 import DashboardSetting from '../../components/settings/DashboardSetting';
 import RatioSetting from '../../components/settings/RatioSetting';
-import ChatsSetting from '../../components/settings/ChatsSetting';
-import DrawingSetting from '../../components/settings/DrawingSetting';
-import PaymentSetting from '../../components/settings/PaymentSetting';
-import PerformanceSetting from '../../components/settings/PerformanceSetting';
 
 const Setting = () => {
   const { t } = useTranslation();
@@ -79,36 +69,6 @@ const Setting = () => {
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <MessageSquare size={18} />
-          {t('聊天设置')}
-        </span>
-      ),
-      content: <ChatsSetting />,
-      itemKey: 'chats',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Palette size={18} />
-          {t('绘图设置')}
-        </span>
-      ),
-      content: <DrawingSetting />,
-      itemKey: 'drawing',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <CreditCard size={18} />
-          {t('支付设置')}
-        </span>
-      ),
-      content: <PaymentSetting />,
-      itemKey: 'payment',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <Calculator size={18} />
           {t('分组与模型定价设置')}
         </span>
@@ -126,36 +86,7 @@ const Setting = () => {
       content: <RateLimitSetting />,
       itemKey: 'ratelimit',
     });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Shapes size={18} />
-          {t('模型相关设置')}
-        </span>
-      ),
-      content: <ModelSetting />,
-      itemKey: 'models',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Activity size={18} />
-          {t('性能设置')}
-        </span>
-      ),
-      content: <PerformanceSetting />,
-      itemKey: 'performance',
-    });
-    panes.push({
-      tab: (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <Cog size={18} />
-          {t('系统设置')}
-        </span>
-      ),
-      content: <SystemSetting />,
-      itemKey: 'system',
-    });
+
     panes.push({
       tab: (
         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>

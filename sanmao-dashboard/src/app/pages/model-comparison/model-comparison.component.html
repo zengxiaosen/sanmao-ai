@@ -1,0 +1,146 @@
+<div class="comparison-container">
+  <div class="header">
+    <h1>模型对比分析</h1>
+    <p class="subtitle">单模型 vs 集成模型（DoubleEnsemble）</p>
+  </div>
+
+  <div *ngIf="loading" class="loading">加载中...</div>
+
+  <div *ngIf="!loading && data" class="content">
+    <!-- 策略说明 -->
+    <div class="strategy-info">
+      <h2>策略配置</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="label">股票池：</span>
+          <span class="value">{{ data.stock_pool.join(", ") }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">训练期：</span>
+          <span class="value">{{ data.strategy.train_period }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">测试期：</span>
+          <span class="value">{{ data.strategy.test_period }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">选股数：</span>
+          <span class="value">Top {{ data.strategy.top_k }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">调仓频率：</span>
+          <span class="value">{{ data.strategy.rebalance }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">配置方式：</span>
+          <span class="value">{{ data.strategy.weight }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 关键指标对比 -->
+    <div class="metrics-comparison">
+      <h2>关键指标对比</h2>
+      <div class="metrics-grid">
+        <div class="metric-card single">
+          <h3>{{ data.models.single.name }}</h3>
+          <p class="description">{{ data.models.single.description }}</p>
+          <div class="metrics">
+            <div class="metric">
+              <span class="label">总收益</span>
+              <span class="value">{{ data.models.single.metrics.total_return }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">年化收益</span>
+              <span class="value">{{ data.models.single.metrics.annualized_return }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">夏普比率</span>
+              <span class="value">{{ data.models.single.metrics.sharpe_ratio }}</span>
+            </div>
+            <div class="metric">
+              <span class="label">最大回撤</span>
+              <span class="value red">{{ data.models.single.metrics.max_drawdown }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">胜率</span>
+              <span class="value">{{ data.models.single.metrics.win_rate }}%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-card ensemble">
+          <h3>{{ data.models.ensemble.name }}</h3>
+          <p class="description">{{ data.models.ensemble.description }}</p>
+          <div class="metrics">
+            <div class="metric">
+              <span class="label">总收益</span>
+              <span class="value">{{ data.models.ensemble.metrics.total_return }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">年化收益</span>
+              <span class="value">{{ data.models.ensemble.metrics.annualized_return }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">夏普比率</span>
+              <span class="value">{{ data.models.ensemble.metrics.sharpe_ratio }}</span>
+            </div>
+            <div class="metric">
+              <span class="label">最大回撤</span>
+              <span class="value red">{{ data.models.ensemble.metrics.max_drawdown }}%</span>
+            </div>
+            <div class="metric">
+              <span class="label">胜率</span>
+              <span class="value">{{ data.models.ensemble.metrics.win_rate }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 差异说明 -->
+      <div class="difference-box">
+        <h3>集成模型相对单模型的改善</h3>
+        <div class="diff-items">
+          <div class="diff-item" [class.positive]="data.comparison.return_diff > 0">
+            <span class="label">收益差异：</span>
+            <span class="value">{{ data.comparison.return_diff > 0 ? "+" : "" }}{{ data.comparison.return_diff }}%</span>
+          </div>
+          <div class="diff-item" [class.positive]="data.comparison.sharpe_diff > 0">
+            <span class="label">夏普差异：</span>
+            <span class="value">{{ data.comparison.sharpe_diff > 0 ? "+" : "" }}{{ data.comparison.sharpe_diff }}</span>
+          </div>
+          <div class="diff-item" [class.positive]="data.comparison.drawdown_diff > 0">
+            <span class="label">回撤差异：</span>
+            <span class="value">{{ data.comparison.drawdown_diff > 0 ? "+" : "" }}{{ data.comparison.drawdown_diff }}%</span>
+            <span class="note">（负值 = 回撤更小 = 更好）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表 -->
+    <div class="charts">
+      <div class="chart-container">
+        <canvas id="cumulativeChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="drawdownChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="metricsRadar"></canvas>
+      </div>
+    </div>
+
+    <!-- 说明 -->
+    <div class="explanation">
+      <h2>DoubleEnsemble 原理</h2>
+      <ul>
+        <li><strong>训练阶段</strong>：训练 5 个 LightGBM 模型，每个使用不同的随机种子和 80% 特征采样</li>
+        <li><strong>预测阶段</strong>：对同一样本，5 个模型分别给出预测概率，取中位数作为最终预测</li>
+        <li><strong>不确定性估计</strong>：计算 5 个预测的标准差，值越大说明模型分歧越大，可用于风控</li>
+        <li><strong>优势</strong>：降低单模型过拟合，提高预测稳定性（尤其在震荡市）</li>
+        <li><strong>成本</strong>：训练时间增加 5 倍，预测时间增加 5 倍（可接受）</li>
+      </ul>
+    </div>
+  </div>
+</div>

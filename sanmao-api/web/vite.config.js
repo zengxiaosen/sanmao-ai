@@ -69,27 +69,10 @@ export default defineConfig({
     },
   },
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-core': ['react', 'react-dom', 'react-router-dom'],
-          'semi-ui': ['@douyinfe/semi-icons', '@douyinfe/semi-ui'],
-          tools: ['axios', 'history', 'marked'],
-          'react-components': [
-            'react-dropzone',
-            'react-fireworks',
-            'react-telegram-login',
-            'react-toastify',
-            'react-turnstile',
-          ],
-          i18n: [
-            'i18next',
-            'react-i18next',
-            'i18next-browser-languagedetector',
-          ],
-        },
-      },
-    },
+    // 不做手动分包：该项目 vendor 存在循环依赖/顶层副作用(mermaid 等)，
+    // 手动 manualChunks 会破坏模块求值顺序（TDZ / react undefined）。
+    // 交给 Vite/Rollup 默认分包，保证正确性优先。
+    chunkSizeWarningLimit: 3000,
   },
   server: {
     host: '0.0.0.0',

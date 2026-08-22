@@ -2,15 +2,16 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 // explain-box —— 「这张图怎么看」统一说明框。
-// 每张图上方放一个，用大白话说：看什么、颜色/线代表什么、数字怎么算出来的。
-// 折叠式：默认收起一行，点开看完整讲解，不打扰懂行的人。
+// 每张图上方放一个，用通俗语言说：看什么、颜色/线代表什么、数字怎么算出来的。
+// 折叠式：默认收起一行，点开看完整说明，不打扰熟悉的用户。
+// 文案红线：对外产品页面，不出现“小白/AI/模板生成”等字眼。
 @Component({
   selector: 'app-explain',
   standalone: true,
   imports: [CommonModule],
   template: `
     <details class="explain">
-      <summary>💡 {{ title }}（点开看小白讲解）</summary>
+      <summary>{{ title }}</summary>
       <div class="body"><ng-content></ng-content></div>
     </details>
   `,
@@ -27,5 +28,5 @@ import { CommonModule } from '@angular/common';
   `],
 })
 export class ExplainComponent {
-  @Input() title = '这张图怎么看';
+  @Input() title = '图表说明';
 }
