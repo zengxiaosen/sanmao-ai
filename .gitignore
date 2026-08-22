@@ -1,0 +1,15 @@
+# 编译产物 - Go 二进制
+sanmao-api/new-api
+sanmao-api/sanmao-api
+
+# 前端构建产物
+sanmao-api/web/dist/
+
+# 依赖
+node_modules/
+
+# 日志与本地环境
+*.log
+*.env
+pg.env
+.DS_Store

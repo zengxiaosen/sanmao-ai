@@ -1,1 +1,0 @@
-import{u as e,j as i}from"./index-DVZejV3f.js";import{D as o}from"./index-gAcuJVEM.js";import"./IllustrationConstruction-DkCDkcNA.js";const s=()=>{const{t}=e();return i.jsx(o,{apiEndpoint:"/api/privacy-policy",title:t("隐私政策"),cacheKey:"privacy_policy",emptyMessage:t("加载隐私政策内容失败...")})};export{s as default};
